@@ -1,0 +1,3154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HRM & HR Analytics — Hệ thống Quản trị Nhân sự</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- SheetJS (XLSX) cho nhập/xuất Excel chuẩn -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#3b82f6',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              800: '#1e3a8a',
+              900: '#172554',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Tùy chỉnh thanh cuộn & hiệu ứng mượt */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .card-shadow {
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    }
+    .card-shadow-hover:hover {
+      box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.08), 0 4px 8px -4px rgba(15, 23, 42, 0.04);
+    }
+
+    /* Chế độ in A4 tối ưu */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 11pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .print-only {
+        display: block !important;
+      }
+
+      #app-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+
+      .print-break-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .print-card {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+
+      /* Khi in hồ sơ cá nhân riêng biệt */
+      body.printing-profile {
+        font-size: 9.5pt !important;
+        line-height: 1.3 !important;
+      }
+
+      body.printing-profile @page {
+        size: A4 portrait;
+        margin: 8mm 9mm;
+      }
+
+      body.printing-profile #dashboard-view,
+      body.printing-profile #directory-view,
+      body.printing-profile #top-navbar,
+      body.printing-profile #print-org-header {
+        display: none !important;
+      }
+
+      body.printing-profile #print-profile-area {
+        display: block !important;
+      }
+
+      body.printing-profile #print-profile-area > div {
+        padding: 12px 14px !important;
+        gap: 8px !important;
+        border-radius: 8px !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      /* Khi in riêng báo cáo / danh sách có tiêu đề đơn vị */
+      body.printing-org-report #print-org-header {
+        display: block !important;
+      }
+    }
+
+    .print-only {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Thông báo Toast (thay thế alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2.5 max-w-sm w-full px-4 sm:px-0 no-print"></div>
+
+  <!-- Thanh điều hướng trên cùng -->
+  <header id="top-navbar" class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 no-print">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-3 py-3">
+        <!-- Logo & Thương hiệu -->
+        <div class="flex items-center gap-3">
+          <div id="brand-logo-box" class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-800 via-blue-700 to-indigo-700 flex items-center justify-center text-white shadow-sm overflow-hidden shrink-0 border border-blue-200/40">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span id="brand-name-display" class="font-bold text-lg tracking-tight text-slate-900 truncate">ViệtHR <span class="text-blue-700">Analytics</span></span>
+              <span id="brand-code-badge" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">A4 Ready</span>
+            </div>
+            <p id="brand-sub-display" class="text-xs text-slate-500 truncate">Quản trị nguồn nhân lực & Báo cáo phân tích</p>
+          </div>
+        </div>
+
+        <!-- Chuyển đổi 2 chế độ làm việc chính -->
+        <nav class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80" aria-label="Chế độ làm việc">
+          <button id="tab-dashboard" type="button" onclick="switchMode('dashboard')"
+            class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all bg-blue-800 text-white shadow-sm cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Dashboard Phân tích</span>
+          </button>
+          <button id="tab-directory" type="button" onclick="switchMode('directory')"
+            class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span>Quản lý Nhân sự</span>
+            <span id="nav-count-badge" class="ml-0.5 px-1.5 py-0.2 text-xs rounded-full bg-slate-200 text-slate-700 font-bold">0</span>
+          </button>
+        </nav>
+
+        <!-- Nhóm thao tác nhanh -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="openEmployeeModal()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold bg-blue-700 hover:bg-blue-800 text-white shadow-sm transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span class="hidden md:inline">Thêm nhân sự</span>
+            <span class="md:hidden">Thêm</span>
+          </button>
+
+          <input type="file" id="excel-import-input" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" class="hidden" onchange="handleExcelFileSelect(event)" />
+
+          <!-- Button list gom các chức năng mở rộng -->
+          <div class="relative" onclick="event.stopPropagation()">
+            <button id="data-menu-btn" type="button" onclick="toggleDataMenu(event)"
+              class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-xs transition cursor-pointer"
+              aria-expanded="false" aria-haspopup="menu">
+              <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span>Danh sách chức năng</span>
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <div id="data-menu-dropdown" role="menu"
+              class="hidden absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 divide-y divide-slate-100">
+              <div class="py-1">
+                <p class="px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Excel & Bảng tính</p>
+                <button type="button" role="menuitem" onclick="triggerExcelFileInput(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                  <span>Nhập file Excel (.xlsx / .xls / .csv)</span>
+                </button>
+                <button type="button" role="menuitem" onclick="downloadExcelTemplate(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                  <span class="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
+                  <span>Tải file Excel mẫu chuẩn (.xlsx)</span>
+                </button>
+                <button type="button" role="menuitem" onclick="exportExcelWorkbook(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                  <span class="w-2 h-2 rounded-full bg-cyan-600 shrink-0"></span>
+                  <span>Xuất danh sách Excel (.xlsx)</span>
+                </button>
+                <button type="button" role="menuitem" onclick="exportCSV(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                  <span>Xuất danh sách CSV (Excel)</span>
+                </button>
+              </div>
+
+              <div class="py-1">
+                <p class="px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Sao lưu & Khôi phục JSON</p>
+                <button type="button" role="menuitem" onclick="exportJSON(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                  <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                  <span>Sao lưu dữ liệu JSON</span>
+                </button>
+                <label role="menuitem" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                  <span>Nhập dữ liệu từ JSON</span>
+                  <input type="file" id="import-json-input" accept=".json,application/json" class="hidden" onchange="importJSON(event); closeDataMenu();" />
+                </label>
+              </div>
+
+              <div class="py-1">
+                <p class="px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Hệ thống & Báo cáo</p>
+                <button type="button" role="menuitem" onclick="openOrgSettingsModal(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium">
+                  <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span>Cấu hình đơn vị</span>
+                </button>
+                <button type="button" role="menuitem" onclick="printCurrentView(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                  <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  <span>In báo cáo / Danh sách A4</span>
+                </button>
+                <button type="button" role="menuitem" onclick="resetSampleData(); closeDataMenu();"
+                  class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 cursor-pointer font-medium">
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Khôi phục 10 dữ liệu mẫu</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Khung nội dung chính -->
+  <main id="app-wrapper" class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Tiêu đề khi in A4 -->
+    <div id="print-org-header" class="print-only mb-4 pb-3 border-b-2 border-slate-800">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div id="print-org-logo" class="w-12 h-12 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center bg-blue-900 text-white font-bold text-sm shrink-0"></div>
+          <div>
+            <p id="print-parent-org" class="text-[11px] font-semibold uppercase tracking-wider text-slate-500"></p>
+            <p id="print-company-name" class="text-sm font-bold text-blue-950"></p>
+            <p id="print-company-meta" class="text-[11px] text-slate-600"></p>
+          </div>
+        </div>
+        <div class="text-right text-xs text-slate-600">
+          <p>Ngày in: <strong id="print-date-str"></strong></p>
+          <p>Khổ giấy: A4</p>
+        </div>
+      </div>
+      <div class="mt-3 pt-2 border-t border-slate-200 flex items-baseline justify-between">
+        <div>
+          <h1 id="print-doc-title" class="text-lg font-bold text-slate-900 uppercase tracking-wide">BÁO CÁO PHÂN TÍCH NHÂN SỰ</h1>
+          <p id="print-doc-subtitle" class="text-xs text-slate-600">Hệ thống Quản trị Nhân sự ViệtHR Analytics</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- CHẾ ĐỘ 1: DASHBOARD PHÂN TÍCH NHÂN SỰ                               -->
+    <!-- ===================================================================== -->
+    <section id="dashboard-view" class="space-y-6">
+      <!-- Header Dashboard & Bộ lọc thời gian/phòng ban -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 no-print">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Dashboard Phân tích Nhân sự</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Tổng quan cơ cấu tổ chức, quỹ lương ước tính, biến động và cảnh báo nhân sự</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <label class="text-xs font-medium text-slate-500">Lọc phân tích theo phòng ban:</label>
+          <select id="dash-dept-filter" onchange="renderDashboard()"
+            class="px-3 py-2 rounded-xl text-sm font-medium bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <option value="ALL">Tất cả phòng ban</option>
+          </select>
+          <div class="flex items-center bg-white border border-slate-300 rounded-xl p-0.5 text-xs font-semibold">
+            <button id="salary-mode-gross" type="button" onclick="setSalaryViewMode('GROSS')"
+              class="px-2.5 py-1.5 rounded-lg bg-blue-800 text-white cursor-pointer">Ước tính Gross</button>
+            <button id="salary-mode-net" type="button" onclick="setSalaryViewMode('NET')"
+              class="px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 cursor-pointer">Ước tính Net</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hàng thẻ KPI (6 chỉ số quan trọng) -->
+      <div id="kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <!-- Được render bằng JS -->
+      </div>
+
+      <!-- Hàng biểu đồ chính (Cơ cấu phòng ban + Xu hướng nhân sự & quỹ lương) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Cơ cấu nhân sự theo Phòng ban</h2>
+              <p class="text-xs text-slate-500">Phân bổ headcount hiện tại</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700">Headcount</span>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chart-dept"></canvas>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Xu hướng biến động nhân sự & Quỹ lương (6 tháng)</h2>
+              <p class="text-xs text-slate-500">Số lượng nhân sự hoạt động & Quỹ lương hàng tháng (triệu VNĐ)</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700">6 Tháng gần nhất</span>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chart-trend"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hàng biểu đồ phụ (Cấp bậc, Giới tính, Trạng thái) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Cơ cấu theo Cấp bậc</h3>
+          <p class="text-xs text-slate-500 mb-3">Tỷ trọng nhân viên, chuyên viên, quản lý</p>
+          <div class="relative h-52">
+            <canvas id="chart-level"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Cơ cấu theo Giới tính</h3>
+          <p class="text-xs text-slate-500 mb-3">Tỷ lệ Nam / Nữ / Khác</p>
+          <div class="relative h-52">
+            <canvas id="chart-gender"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Trạng thái làm việc</h3>
+          <p class="text-xs text-slate-500 mb-3">Đang làm việc, thử việc, nghỉ phép, nghỉ việc</p>
+          <div class="relative h-52">
+            <canvas id="chart-status"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng cảnh báo & Tóm tắt nhanh -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- 1. Sắp hết hạn thử việc / hợp đồng -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <h3 class="text-sm font-bold text-slate-900">Thử việc & Hợp đồng cần lưu ý</h3>
+            </div>
+            <span id="alert-probation-count" class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">0</span>
+          </div>
+          <div id="alert-probation-list" class="space-y-2.5 text-sm"></div>
+        </div>
+
+        <!-- 2. Sinh nhật trong tháng -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+              <h3 id="birthday-card-title" class="text-sm font-bold text-slate-900">Sinh nhật trong tháng</h3>
+            </div>
+            <span id="birthday-count" class="text-xs font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-800">0</span>
+          </div>
+          <div id="birthday-list" class="space-y-2.5 text-sm"></div>
+        </div>
+
+        <!-- 3. Top phòng ban theo chi phí lương -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 card-shadow print-card print-break-avoid">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+              <h3 class="text-sm font-bold text-slate-900">Top Phòng ban theo Chi phí lương</h3>
+            </div>
+            <span class="text-xs font-semibold text-slate-500">/ tháng</span>
+          </div>
+          <div id="top-dept-salary-list" class="space-y-3 text-sm"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CHẾ ĐỘ 2: QUẢN LÝ NHÂN SỰ (DANH SÁCH & HỒ SƠ CHI TIẾT)              -->
+    <!-- ===================================================================== -->
+    <section id="directory-view" class="hidden space-y-5">
+      <!-- Tiêu đề & nút thao tác -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 no-print">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Danh sách & Hồ sơ Nhân sự</h1>
+          <p class="text-sm text-slate-500 mt-0.5">Quản lý đầy đủ hồ sơ cá nhân, hợp đồng, lương ngân hàng, liên hệ khẩn cấp và ảnh đại diện</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex rounded-xl bg-white border border-slate-300 p-0.5">
+            <button id="view-mode-table" type="button" onclick="setDirectoryLayout('table')"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white cursor-pointer">Dạng bảng</button>
+            <button id="view-mode-grid" type="button" onclick="setDirectoryLayout('grid')"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer">Dạng thẻ</button>
+          </div>
+          <button type="button" onclick="openEmployeeModal()"
+            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-blue-700 hover:bg-blue-800 text-white shadow-sm transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm nhân sự mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Thanh tìm kiếm & bộ lọc -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-4 card-shadow no-print">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+          <!-- Tìm kiếm từ khóa -->
+          <div class="lg:col-span-5 relative">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input id="filter-search" type="text" oninput="renderDirectory()"
+              placeholder="Tìm theo họ tên, mã NV, email, SĐT, CCCD..."
+              class="w-full pl-10 pr-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          </div>
+
+          <!-- Lọc phòng ban -->
+          <div class="lg:col-span-2">
+            <select id="filter-dept" onchange="renderDirectory()"
+              class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+              <option value="ALL">Mọi phòng ban</option>
+            </select>
+          </div>
+
+          <!-- Lọc chức vụ -->
+          <div class="lg:col-span-2">
+            <select id="filter-role" onchange="renderDirectory()"
+              class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+              <option value="ALL">Mọi chức vụ</option>
+            </select>
+          </div>
+
+          <!-- Lọc trạng thái -->
+          <div class="lg:col-span-3 flex items-center gap-2">
+            <select id="filter-status" onchange="renderDirectory()"
+              class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+              <option value="ALL">Mọi trạng thái</option>
+              <option value="Đang làm việc">Đang làm việc</option>
+              <option value="Thử việc">Thử việc</option>
+              <option value="Nghỉ phép dài hạn">Nghỉ phép dài hạn</option>
+              <option value="Đã nghỉ việc">Đã nghỉ việc</option>
+            </select>
+            <button type="button" onclick="resetDirectoryFilters()" title="Xóa bộ lọc"
+              class="px-3 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition cursor-pointer shrink-0">
+              Đặt lại
+            </button>
+          </div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <span id="directory-result-summary">Hiển thị 0 nhân sự</span>
+          <span>Mẹo: Bấm vào tên hoặc ảnh nhân sự để xem hồ sơ chi tiết hoặc in hồ sơ A4 cá nhân.</span>
+        </div>
+      </div>
+
+      <!-- Khung hiển thị danh sách dạng Bảng -->
+      <div id="directory-table-container" class="bg-white rounded-2xl border border-slate-200/90 card-shadow overflow-hidden print-card">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3.5 px-4">Nhân sự</th>
+                <th class="py-3.5 px-3">Phòng ban & Chức vụ</th>
+                <th class="py-3.5 px-3">Liên hệ</th>
+                <th class="py-3.5 px-3">Ngày vào làm & HĐ</th>
+                <th class="py-3.5 px-3 text-right">Thu nhập (Lương + PC)</th>
+                <th class="py-3.5 px-3">Trạng thái</th>
+                <th class="py-3.5 px-4 text-right no-print">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="employee-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Khung hiển thị danh sách dạng Thẻ (Grid) -->
+      <div id="directory-grid-container" class="hidden grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </section>
+
+    <!-- Khu vực riêng dành cho in Hồ sơ cá nhân A4 -->
+    <section id="print-profile-area" class="hidden"></section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL XEM CHI TIẾT HỒ SƠ NHÂN SỰ                                     -->
+  <!-- ===================================================================== -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs overflow-y-auto no-print" onclick="backdropCloseModal(event, 'detail-modal')">
+    <div class="min-h-screen px-4 py-8 flex items-center justify-center">
+      <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
+        <div id="detail-modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL THÊM MỚI / CHỈNH SỬA HỒ SƠ NHÂN SỰ                            -->
+  <!-- ===================================================================== -->
+  <div id="form-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs overflow-y-auto no-print" onclick="backdropCloseModal(event, 'form-modal')">
+    <div class="min-h-screen px-4 py-8 flex items-center justify-center">
+      <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
+        <!-- Header Form -->
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-900 to-blue-700 text-white flex items-center justify-between">
+          <div>
+            <h2 id="form-modal-title" class="text-lg font-bold">Thêm hồ sơ nhân sự mới</h2>
+            <p class="text-xs text-blue-100">Vui lòng điền đầy đủ các thông tin bắt buộc (*)</p>
+          </div>
+          <button type="button" onclick="closeEmployeeModal()" class="p-1.5 rounded-lg hover:bg-white/15 transition cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form id="employee-form" onsubmit="saveEmployeeForm(event)" class="p-6 space-y-6 max-h-[82vh] overflow-y-auto">
+          <input type="hidden" id="emp-id" />
+
+          <!-- Khối ảnh đại diện & Mã NV -->
+          <div class="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <div class="relative shrink-0">
+              <div id="form-avatar-preview" class="w-24 h-24 rounded-2xl overflow-hidden shadow-md border-2 border-white flex items-center justify-center text-2xl font-bold text-white bg-blue-700"></div>
+            </div>
+            <div class="flex-1 space-y-2.5 text-center sm:text-left w-full">
+              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span class="text-sm font-bold text-slate-800">Ảnh đại diện nhân sự</span>
+                <span class="text-xs text-slate-400">(Tối đa ~2MB, tự lưu trình duyệt)</span>
+              </div>
+              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 cursor-pointer transition">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Tải ảnh từ máy
+                  <input type="file" id="emp-avatar-file" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)" />
+                </label>
+                <button type="button" onclick="pickPresetAvatar()"
+                  class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer transition">
+                  Chọn ảnh mẫu chân dung
+                </button>
+                <button type="button" onclick="clearAvatarToInitials()"
+                  class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer transition">
+                  Dùng chữ cái tên
+                </button>
+              </div>
+              <input type="hidden" id="emp-avatar-data" />
+            </div>
+          </div>
+
+          <!-- 1. Thông tin cơ bản -->
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-blue-800 mb-3 pb-1.5 border-b border-slate-200">1. Thông tin cơ bản & Định danh</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Mã nhân viên <span class="text-rose-500">*</span></label>
+                <input id="emp-code" type="text" required placeholder="VD: NV011"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên <span class="text-rose-500">*</span></label>
+                <input id="emp-name" type="text" required oninput="updateFormAvatarInitials()" placeholder="VD: Nguyễn Minh Khôi"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày sinh <span class="text-rose-500">*</span></label>
+                <input id="emp-dob" type="date" required
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính</label>
+                <select id="emp-gender" class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Tình trạng hôn nhân</label>
+                <select id="emp-marital" class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                  <option value="Độc thân">Độc thân</option>
+                  <option value="Đã kết hôn">Đã kết hôn</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Số CCCD / CMND</label>
+                <input id="emp-idcard" type="text" placeholder="079095001234"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày cấp CCCD</label>
+                <input id="emp-idcard-date" type="date"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nơi cấp</label>
+                <input id="emp-idcard-place" type="text" placeholder="Cục CSQLHC về TTXH"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div class="sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Quê quán / Địa chỉ thường trú</label>
+                  <input id="emp-hometown" type="text" placeholder="Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+                    class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Chỗ ở hiện tại</label>
+                  <input id="emp-address" type="text" placeholder="TP. Thủ Đức, TP. Hồ Chí Minh"
+                    class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Thông tin công việc -->
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-blue-800 mb-3 pb-1.5 border-b border-slate-200">2. Thông tin công việc & Hợp đồng</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Phòng ban <span class="text-rose-500">*</span></label>
+                <select id="emp-dept" required class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Chức vụ <span class="text-rose-500">*</span></label>
+                <input id="emp-role" type="text" required placeholder="VD: Kỹ sư Phần mềm Senior"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Cấp bậc</label>
+                <select id="emp-level" class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Chức vụ <span class="text-rose-500">*</span></label>
+                <input id="emp-role" type="text" required placeholder="VD: Kỹ sư Phần mềm Senior"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Cấp bậc</label>
+                <select id="emp-level" class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                  <option value="Thực tập / Thử việc">Thực tập / Thử việc</option>
+                  <option value="Nhân viên">Nhân viên</option>
+                  <option value="Chuyên viên">Chuyên viên</option>
+                  <option value="Trưởng nhóm / Lead">Trưởng nhóm / Lead</option>
+                  <option value="Quản lý / Giám đốc">Quản lý / Giám đốc</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Loại hợp đồng</label>
+                <select id="emp-contract" class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                  <option value="Thử việc">Thử việc</option>
+                  <option value="Xác định thời hạn">Xác định thời hạn</option>
+                  <option value="Không xác định thời hạn">Không xác định thời hạn</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày vào làm <span class="text-rose-500">*</span></label>
+                <input id="emp-startdate" type="date" required
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Hạn thử việc / HĐ</label>
+                <input id="emp-contract-end" type="date"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Trạng thái làm việc</label>
+                <select id="emp-status" class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                  <option value="Đang làm việc">Đang làm việc</option>
+                  <option value="Thử việc">Thử việc</option>
+                  <option value="Nghỉ phép dài hạn">Nghỉ phép dài hạn</option>
+                  <option value="Đã nghỉ việc">Đã nghỉ việc</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Quản lý trực tiếp</label>
+                <input id="emp-manager" type="text" placeholder="VD: Trần Quốc Tuấn"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Liên hệ & Liên hệ khẩn cấp -->
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-blue-800 mb-3 pb-1.5 border-b border-slate-200">3. Liên hệ & Người liên hệ khẩn cấp</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại <span class="text-rose-500">*</span></label>
+                <input id="emp-phone" type="tel" required placeholder="0901234567"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Email công ty <span class="text-rose-500">*</span></label>
+                <input id="emp-email" type="email" required placeholder="khoi.nm@viethr.vn"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Email cá nhân</label>
+                <input id="emp-personal-email" type="email" placeholder="minhkhoi.dev@gmail.com"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Người liên hệ khẩn cấp</label>
+                <input id="emp-emg-name" type="text" placeholder="Nguyễn Thị Lan"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Mối quan hệ</label>
+                <input id="emp-emg-rel" type="text" placeholder="Mẹ / Vợ / Chồng / Anh chị"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">SĐT liên hệ khẩn cấp</label>
+                <input id="emp-emg-phone" type="tel" placeholder="0909876543"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Lương, Ngân hàng, Thuế & BHXH -->
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-blue-800 mb-3 pb-1.5 border-b border-slate-200">4. Lương, Phụ cấp, Ngân hàng & Thuế/BHXH</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Lương thỏa thuận / Cơ bản (VNĐ) <span class="text-rose-500">*</span></label>
+                <input id="emp-salary" type="number" required min="0" step="100000" placeholder="22000000"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Phụ cấp hàng tháng (VNĐ)</label>
+                <input id="emp-allowance" type="number" min="0" step="100000" placeholder="2500000"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Ngân hàng</label>
+                <input id="emp-bank" type="text" placeholder="Vietcombank / Techcombank / MB"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Số tài khoản</label>
+                <input id="emp-bank-acc" type="text" placeholder="1012345678"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Chi nhánh ngân hàng</label>
+                <input id="emp-bank-branch" type="text" placeholder="CN TP. Hồ Chí Minh"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Mã số thuế cá nhân</label>
+                <input id="emp-tax" type="text" placeholder="8012345678"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Số sổ BHXH</label>
+                <input id="emp-bhxh" type="text" placeholder="7924123456"
+                  class="w-full px-3 py-2 rounded-xl text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Nút lưu / hủy -->
+          <div class="pt-4 border-t border-slate-200 flex items-center justify-end gap-3 sticky bottom-0 bg-white">
+            <button type="button" onclick="closeEmployeeModal()"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer">
+              Hủy bỏ
+            </button>
+            <button type="submit"
+              class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 shadow-sm transition cursor-pointer">
+              Lưu hồ sơ nhân sự
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL XEM trước DỮ LIỆU NHẬP EXCEL (PREVIEW IMPORT)                  -->
+  <!-- ===================================================================== -->
+  <div id="excel-preview-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs overflow-y-auto no-print" onclick="backdropCloseModal(event, 'excel-preview-modal')">
+    <div class="min-h-screen px-4 py-8 flex items-center justify-center">
+      <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 bg-gradient-to-r from-emerald-800 to-teal-700 text-white flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold">Xem trước dữ liệu nhập từ Excel / CSV</h2>
+            <p id="excel-file-meta" class="text-xs text-emerald-100">Kiểm tra tính hợp lệ và chọn chế độ áp dụng dữ liệu</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="downloadExcelTemplate()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/15 hover:bg-white/25 text-white cursor-pointer">
+              Tải file mẫu (.xlsx)
+            </button>
+            <button type="button" onclick="closeExcelPreviewModal()" class="p-1.5 rounded-lg hover:bg-white/15 cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4 max-h-[78vh] overflow-y-auto">
+          <!-- Thống kê dòng hợp lệ / cảnh báo -->
+          <div id="excel-summary-bar" class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm"></div>
+
+          <!-- Chế độ nhập dữ liệu -->
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-700">Chế độ xử lý khi nhập dữ liệu</p>
+              <p class="text-xs text-slate-500">Chọn cách gộp hoặc cập nhật hồ sơ nhân sự từ tệp bảng tính</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
+              <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 cursor-pointer">
+                <input type="radio" name="excel-import-mode" value="MERGE_UPSERT" checked class="accent-emerald-700" />
+                <span>Gộp & Cập nhật theo Mã NV</span>
+              </label>
+              <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300 cursor-pointer">
+                <input type="radio" name="excel-import-mode" value="APPEND_NEW" class="accent-emerald-700" />
+                <span>Chỉ thêm mới (bỏ qua trùng Mã NV)</span>
+              </label>
+              <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-rose-200 text-rose-700 cursor-pointer">
+                <input type="radio" name="excel-import-mode" value="REPLACE_ALL" class="accent-rose-600" />
+                <span>Ghi đè toàn bộ danh sách</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Cảnh báo lỗi dòng -->
+          <div id="excel-warnings-box" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1"></div>
+
+          <!-- Bảng xem trước -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto max-h-80">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-100 text-slate-700 font-bold sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3">Dòng</th>
+                    <th class="py-2.5 px-3">Mã NV</th>
+                    <th class="py-2.5 px-3">Họ và tên</th>
+                    <th class="py-2.5 px-3">Phòng ban</th>
+                    <th class="py-2.5 px-3">Chức vụ</th>
+                    <th class="py-2.5 px-3">Email / SĐT</th>
+                    <th class="py-2.5 px-3 text-right">Lương cơ bản</th>
+                    <th class="py-2.5 px-3">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="excel-preview-tbody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeExcelPreviewModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 cursor-pointer">
+            Hủy bỏ
+          </button>
+          <button id="apply-excel-import-btn" type="button" onclick="applyExcelImport()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 shadow-sm cursor-pointer">
+            Áp dụng vào hệ thống
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL CẤU HÌNH ĐƠN VỊ (ORGANIZATION SETTINGS)                        -->
+  <!-- ===================================================================== -->
+  <div id="org-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs overflow-y-auto no-print" onclick="backdropCloseModal(event, 'org-modal')">
+    <div class="min-h-screen px-4 py-8 flex items-center justify-center">
+      <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-blue-900 to-blue-800 text-white flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold">Cấu hình Đơn vị / Doanh nghiệp</h2>
+            <p class="text-xs text-blue-100">Thông tin hiển thị trên Header, Báo cáo phân tích, Bản in A4 và Danh mục chuẩn</p>
+          </div>
+          <button type="button" onclick="closeOrgSettingsModal()" class="p-1.5 rounded-lg hover:bg-white/15 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form id="org-settings-form" onsubmit="saveOrgSettingsForm(event)" class="p-6 space-y-6 max-h-[82vh] overflow-y-auto text-sm">
+          <!-- Khối Logo đơn vị -->
+          <div class="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <div id="org-logo-preview" class="w-20 h-20 rounded-2xl bg-blue-800 text-white flex items-center justify-center font-bold text-xl overflow-hidden border-2 border-white shadow-md shrink-0"></div>
+            <div class="flex-1 space-y-2 text-center sm:text-left">
+              <p class="font-bold text-slate-800">Logo đơn vị / doanh nghiệp</p>
+              <p class="text-xs text-slate-500">Tự động hiển thị trên thanh điều hướng và đầu trang báo cáo in A4</p>
+              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 cursor-pointer">
+                  Tải logo từ máy
+                  <input type="file" id="org-logo-file" accept="image/*" class="hidden" onchange="handleOrgLogoUpload(event)" />
+                </label>
+                <button type="button" onclick="pickPresetOrgLogo()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer">
+                  Biểu tượng mẫu
+                </button>
+                <button type="button" onclick="clearOrgLogo()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
+                  Xóa logo (dùng chữ viết tắt)
+                </button>
+              </div>
+              <input type="hidden" id="org-logo-data" />
+            </div>
+          </div>
+
+          <!-- Thông tin pháp lý & liên hệ -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Tên đơn vị / Công ty <span class="text-rose-500">*</span></label>
+              <input id="org-name" type="text" required placeholder="VD: Công ty Cổ phần Công nghệ ViệtHR"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Tên viết tắt / Mã đơn vị</label>
+              <input id="org-code" type="text" placeholder="VD: VIETHR"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Đơn vị chủ quản / Tập đoàn</label>
+              <input id="org-parent" type="text" placeholder="VD: Tập đoàn Công nghệ số Việt Nam"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Mã số thuế (MST)</label>
+              <input id="org-tax" type="text" placeholder="VD: 0318899001"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Đơn vị tiền tệ hiển thị</label>
+              <select id="org-currency" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                <option value="VNĐ">VNĐ (Việt Nam Đồng)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ trụ sở chính</label>
+              <input id="org-address" type="text" placeholder="VD: Tòa nhà Innovation, 123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại liên hệ</label>
+              <input id="org-phone" type="tel" placeholder="028 3822 9988"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Email liên hệ</label>
+              <input id="org-email" type="email" placeholder="hr@viethr.vn"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Website</label>
+              <input id="org-website" type="text" placeholder="https://viethr.vn"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Người đại diện pháp luật</label>
+              <input id="org-ceo" type="text" placeholder="VD: Nguyễn Văn An — Tổng Giám đốc"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Trưởng phòng Nhân sự / Phụ trách báo cáo</label>
+              <input id="org-hr-head" type="text" placeholder="VD: Nguyễn Thị Mai Anh — Trưởng phòng Nhân sự"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+          </div>
+
+          <!-- Danh mục phòng ban & cấp bậc -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Danh sách Phòng ban (mỗi dòng 1 phòng ban)</label>
+              <textarea id="org-departments" rows="5"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Danh sách Cấp bậc (mỗi dòng 1 cấp bậc)</label>
+              <textarea id="org-levels" rows="5"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 sticky bottom-0 bg-white">
+            <button type="button" onclick="resetDefaultOrgSettings()" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">
+              Khôi phục cấu hình mặc định
+            </button>
+            <div class="flex items-center gap-2.5">
+              <button type="button" onclick="closeOrgSettingsModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer">
+                Hủy
+              </button>
+              <button type="submit" class="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 shadow-sm cursor-pointer">
+                Lưu cấu hình đơn vị
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL XÁC NHẬN XÓA NHÂN SỰ (THAY THẾ CONFIRM)                        -->
+  <!-- ===================================================================== -->
+  <div id="delete-modal" class="fixed inset-0 z-[60] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print" onclick="backdropCloseModal(event, 'delete-modal')">
+    <div class="bg-white max-w-md w-full rounded-2xl shadow-2xl border border-slate-200 p-6" onclick="event.stopPropagation()">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900">Xác nhận xóa hồ sơ nhân sự</h3>
+      <p id="delete-modal-desc" class="text-sm text-slate-600 mt-1.5">Bạn có chắc chắn muốn xóa nhân sự này khỏi hệ thống? Hành động này sẽ cập nhật lại báo cáo và dữ liệu trình duyệt.</p>
+      <div class="mt-6 flex items-center justify-end gap-2.5">
+        <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer">Hủy</button>
+        <button id="confirm-delete-btn" type="button" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 cursor-pointer">Xóa hồ sơ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================================
+     * 1. CẤU HÌNH, DỮ LIỆU MẪU & TRẠNG THÁI ỨNG DỤNG
+     * ===================================================================== */
+    const STORAGE_KEY = 'viethr_employees_v1';
+    const PREFS_KEY = 'viethr_prefs_v1';
+    const ORG_KEY = 'viethr_org_settings_v1';
+
+    const DEFAULT_DEPARTMENTS = [
+      'Kỹ thuật',
+      'Kinh doanh',
+      'Nhân sự & Hành chính',
+      'Tài chính - Kế toán',
+      'Sản xuất / Vận hành'
+    ];
+
+    const DEFAULT_LEVELS = [
+      'Thực tập / Thử việc',
+      'Nhân viên',
+      'Chuyên viên',
+      'Trưởng nhóm / Lead',
+      'Quản lý / Giám đốc'
+    ];
+
+    function makeOrgLogoDataUrl(bgHex, accentHex, label = 'HR') {
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="og" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="${bgHex}"/>
+              <stop offset="100%" stop-color="${accentHex}"/>
+            </linearGradient>
+          </defs>
+          <rect width="120" height="120" rx="24" fill="url(#og)"/>
+          <path d="M26 84 V44 L60 26 L94 44 V84" fill="none" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
+          <rect x="48" y="56" width="24" height="28" rx="4" fill="#ffffff" fill-opacity="0.9"/>
+          <text x="60" y="106" text-anchor="middle" fill="#e0e7ff" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700">${label}</text>
+        </svg>`;
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg.trim());
+    }
+
+    const PRESET_ORG_LOGOS = [
+      makeOrgLogoDataUrl('#1e3a8a', '#1d4ed8', 'VIETHR'),
+      makeOrgLogoDataUrl('#0f766e', '#047857', 'CORP'),
+      makeOrgLogoDataUrl('#312e81', '#4338ca', 'GROUP')
+    ];
+
+    function getDefaultOrgSettings() {
+      return {
+        name: 'ViệtHR Analytics',
+        code: 'VIETHR',
+        parentOrg: '',
+        taxCode: '0318899001',
+        address: 'TP. Hồ Chí Minh, Việt Nam',
+        phone: '028 3822 9988',
+        email: 'hr@viethr.vn',
+        website: 'https://viethr.vn',
+        ceo: '',
+        hrHead: 'Nguyễn Thị Mai Anh — Trưởng phòng Nhân sự',
+        currency: 'VNĐ',
+        logo: '',
+        departments: [...DEFAULT_DEPARTMENTS],
+        levels: [...DEFAULT_LEVELS]
+      };
+    }
+
+    let orgSettings = getDefaultOrgSettings();
+    let pendingExcelRecords = [];
+    const PRESET_PORTRAITS = [
+      makeOrgLogoDataUrl('#1e3a8a', '#2563eb', 'NV1'),
+      makeOrgLogoDataUrl('#9d174d', '#db2777', 'NV2'),
+      makeOrgLogoDataUrl('#065f46', '#059669', 'NV3'),
+      makeOrgLogoDataUrl('#5b21b6', '#7c3aed', 'NV4'),
+      makeOrgLogoDataUrl('#9a3412', '#ea580c', 'NV5')
+    ];
+
+    function getDefaultEmployees() {
+      const now = new Date();
+      const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 20);
+      const nextMonthStr = nextMonthDate.toISOString().split('T')[0];
+
+      return [
+        {
+          id: 'emp-1',
+          code: 'NV001',
+          name: 'Trần Quốc Tuấn',
+          avatar: PRESET_PORTRAITS[0],
+          dob: '1991-04-14',
+          gender: 'Nam',
+          marital: 'Đã kết hôn',
+          idCard: '079091002345',
+          idCardDate: '2021-04-10',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'Quận 1, TP. Hồ Chí Minh',
+          address: 'Quận 2, TP. Hồ Chí Minh',
+          dept: 'Kỹ thuật',
+          role: 'Giám đốc Công nghệ / Tech Lead',
+          level: 'Quản lý / Giám đốc',
+          contract: 'Không xác định thời hạn',
+          startDate: '2021-03-15',
+          contractEnd: '',
+          status: 'Đang làm việc',
+          manager: 'Ban Tổng Giám đốc',
+          phone: '0908112233',
+          email: 'tuan.tq@viethr.vn',
+          personalEmail: 'quoctuan.it@gmail.com',
+          emgName: 'Trần Thu Hà',
+          emgRel: 'Vợ',
+          emgPhone: '0908112299',
+          salary: 45000000,
+          allowance: 5000000,
+          bank: 'Vietcombank',
+          bankAcc: '0071000981234',
+          bankBranch: 'CN TP. Hồ Chí Minh',
+          taxCode: '8011223344',
+          bhxh: '7921009988'
+        },
+        {
+          id: 'emp-2',
+          code: 'NV002',
+          name: 'Nguyễn Thị Mai Anh',
+          avatar: PRESET_PORTRAITS[1],
+          dob: `${now.getFullYear() - 29}-${curMonth}-26`,
+          gender: 'Nữ',
+          marital: 'Độc thân',
+          idCard: '001197008821',
+          idCardDate: '2022-06-15',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'Quận Cầu Giấy, Hà Nội',
+          address: 'Quận 3, TP. Hồ Chí Minh',
+          dept: 'Nhân sự & Hành chính',
+          role: 'Trưởng phòng Nhân sự',
+          level: 'Quản lý / Giám đốc',
+          contract: 'Không xác định thời hạn',
+          startDate: '2022-01-10',
+          contractEnd: '',
+          status: 'Đang làm việc',
+          manager: 'Ban Tổng Giám đốc',
+          phone: '0912345678',
+          email: 'anh.ntm@viethr.vn',
+          personalEmail: 'maianh.hr@gmail.com',
+          emgName: 'Nguyễn Văn Hùng',
+          emgRel: 'Bố',
+          emgPhone: '0912000111',
+          salary: 32000000,
+          allowance: 3500000,
+          bank: 'Techcombank',
+          bankAcc: '1903567891011',
+          bankBranch: 'CN Sài Gòn',
+          taxCode: '8022334455',
+          bhxh: '7922008877'
+        },
+        {
+          id: 'emp-3',
+          code: 'NV003',
+          name: 'Lê Hoàng Nam',
+          avatar: PRESET_PORTRAITS[2],
+          dob: '1995-08-05',
+          gender: 'Nam',
+          marital: 'Đã kết hôn',
+          idCard: '079095009123',
+          idCardDate: '2021-05-20',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'TP. Biên Hòa, Đồng Nai',
+          address: 'TP. Thủ Đức, TP. Hồ Chí Minh',
+          dept: 'Kỹ thuật',
+          role: 'Kỹ sư Fullstack Senior',
+          level: 'Chuyên viên',
+          contract: 'Xác định thời hạn',
+          startDate: '2023-05-01',
+          contractEnd: nextMonthStr,
+          status: 'Đang làm việc',
+          manager: 'Trần Quốc Tuấn',
+          phone: '0938445566',
+          email: 'nam.lh@viethr.vn',
+          personalEmail: 'lehoangnam95@gmail.com',
+          emgName: 'Lê Thị Ngọc',
+          emgRel: 'Mẹ',
+          emgPhone: '0938445500',
+          salary: 28000000,
+          allowance: 3000000,
+          bank: 'MB Bank',
+          bankAcc: '098765432100',
+          bankBranch: 'CN Đông Sài Gòn',
+          taxCode: '8033445566',
+          bhxh: '7923007766'
+        },
+        {
+          id: 'emp-4',
+          code: 'NV004',
+          name: 'Phạm Bảo Trâm',
+          avatar: PRESET_PORTRAITS[3],
+          dob: '1998-03-19',
+          gender: 'Nữ',
+          marital: 'Độc thân',
+          idCard: '048198003419',
+          idCardDate: '2021-09-12',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'Quận Hải Châu, Đà Nẵng',
+          address: 'Quận Phú Nhuận, TP. Hồ Chí Minh',
+          dept: 'Kinh doanh',
+          role: 'Chuyên viên Kinh doanh B2B',
+          level: 'Chuyên viên',
+          contract: 'Xác định thời hạn',
+          startDate: '2023-11-15',
+          contractEnd: '2026-11-15',
+          status: 'Đang làm việc',
+          manager: 'Đỗ Minh Đức',
+          phone: '0909778899',
+          email: 'tram.pb@viethr.vn',
+          personalEmail: 'baotram.sales@gmail.com',
+          emgName: 'Phạm Văn Minh',
+          emgRel: 'Anh trai',
+          emgPhone: '0909778801',
+          salary: 18500000,
+          allowance: 4500000,
+          bank: 'ACB',
+          bankAcc: '245678912',
+          bankBranch: 'CN Phú Nhuận',
+          taxCode: '8044556677',
+          bhxh: '7924006655'
+        },
+        {
+          id: 'emp-5',
+          code: 'NV005',
+          name: 'Đỗ Minh Đức',
+          avatar: PRESET_PORTRAITS[4],
+          dob: '1990-12-02',
+          gender: 'Nam',
+          marital: 'Đã kết hôn',
+          idCard: '001090001192',
+          idCardDate: '2020-12-22',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'Quận Hoàn Kiếm, Hà Nội',
+          address: 'Quận 7, TP. Hồ Chí Minh',
+          dept: 'Kinh doanh',
+          role: 'Trưởng phòng Kinh doanh',
+          level: 'Quản lý / Giám đốc',
+          contract: 'Không xác định thời hạn',
+          startDate: '2021-08-01',
+          contractEnd: '',
+          status: 'Đang làm việc',
+          manager: 'Ban Tổng Giám đốc',
+          phone: '0977123987',
+          email: 'duc.dm@viethr.vn',
+          personalEmail: 'dominhduc.bd@gmail.com',
+          emgName: 'Vũ Thị Hoa',
+          emgRel: 'Vợ',
+          emgPhone: '0977123900',
+          salary: 35000000,
+          allowance: 5000000,
+          bank: 'Vietcombank',
+          bankAcc: '0181000445566',
+          bankBranch: 'CN Nam Sài Gòn',
+          taxCode: '8055667788',
+          bhxh: '7925005544'
+        },
+        {
+          id: 'emp-6',
+          code: 'NV006',
+          name: 'Võ Thị Thanh Thảo',
+          avatar: '',
+          dob: '1996-07-21',
+          gender: 'Nữ',
+          marital: 'Đã kết hôn',
+          idCard: '079196006789',
+          idCardDate: '2021-07-08',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'TP. Mỹ Tho, Tiền Giang',
+          address: 'Quận 10, TP. Hồ Chí Minh',
+          dept: 'Tài chính - Kế toán',
+          role: 'Kế toán Tổng hợp',
+          level: 'Chuyên viên',
+          contract: 'Không xác định thời hạn',
+          startDate: '2022-06-01',
+          contractEnd: '',
+          status: 'Đang làm việc',
+          manager: 'Nguyễn Thị Mai Anh',
+          phone: '0903667788',
+          email: 'thao.vtt@viethr.vn',
+          personalEmail: 'thanhthao.acc@gmail.com',
+          emgName: 'Võ Văn Tài',
+          emgRel: 'Chồng',
+          emgPhone: '0903667700',
+          salary: 23000000,
+          allowance: 2500000,
+          bank: 'BIDV',
+          bankAcc: '3141000223344',
+          bankBranch: 'CN TP. Hồ Chí Minh',
+          taxCode: '8066778899',
+          bhxh: '7926004433'
+        },
+        {
+          id: 'emp-7',
+          code: 'NV007',
+          name: 'Bùi Quang Huy',
+          avatar: '',
+          dob: '1993-02-11',
+          gender: 'Nam',
+          marital: 'Đã kết hôn',
+          idCard: '034093005218',
+          idCardDate: '2021-03-19',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'TP. Thái Bình, Thái Bình',
+          address: 'Quận Bình Tân, TP. Hồ Chí Minh',
+          dept: 'Sản xuất / Vận hành',
+          role: 'Trưởng ca Vận hành',
+          level: 'Trưởng nhóm / Lead',
+          contract: 'Xác định thời hạn',
+          startDate: '2022-09-15',
+          contractEnd: '2026-09-15',
+          status: 'Đang làm việc',
+          manager: 'Đỗ Minh Đức',
+          phone: '0982554433',
+          email: 'huy.bq@viethr.vn',
+          personalEmail: 'quanghuy.ops@gmail.com',
+          emgName: 'Bùi Thị Mai',
+          emgRel: 'Mẹ',
+          emgPhone: '0982554400',
+          salary: 21000000,
+          allowance: 3000000,
+          bank: 'VPBank',
+          bankAcc: '18899001122',
+          bankBranch: 'CN TP. Hồ Chí Minh',
+          taxCode: '8077889900',
+          bhxh: '7927003322'
+        },
+        {
+          id: 'emp-8',
+          code: 'NV008',
+          name: 'Hoàng Gia Bảo',
+          avatar: '',
+          dob: '2001-10-09',
+          gender: 'Nam',
+          marital: 'Độc thân',
+          idCard: '079201007812',
+          idCardDate: '2022-02-14',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'Quận Gò Vấp, TP. Hồ Chí Minh',
+          address: 'Quận Gò Vấp, TP. Hồ Chí Minh',
+          dept: 'Kỹ thuật',
+          role: 'Lập trình viên Frontend (Thử việc)',
+          level: 'Thực tập / Thử việc',
+          contract: 'Thử việc',
+          startDate: '2026-10-01',
+          contractEnd: nextMonthStr,
+          status: 'Thử việc',
+          manager: 'Lê Hoàng Nam',
+          phone: '0945119988',
+          email: 'bao.hg@viethr.vn',
+          personalEmail: 'giabao.fe@gmail.com',
+          emgName: 'Hoàng Văn Long',
+          emgRel: 'Bố',
+          emgPhone: '0945119900',
+          salary: 14000000,
+          allowance: 1500000,
+          bank: 'TPBank',
+          bankAcc: '04567891234',
+          bankBranch: 'CN TP. Hồ Chí Minh',
+          taxCode: '8088990011',
+          bhxh: '7928002211'
+        },
+        {
+          id: 'emp-9',
+          code: 'NV009',
+          name: 'Đặng Khánh Linh',
+          avatar: '',
+          dob: '1999-05-29',
+          gender: 'Nữ',
+          marital: 'Độc thân',
+          idCard: '031199004109',
+          idCardDate: '2021-11-03',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'Quận Ngô Quyền, Hải Phòng',
+          address: 'Quận 1, TP. Hồ Chí Minh',
+          dept: 'Nhân sự & Hành chính',
+          role: 'Chuyên viên C&B & Tuyển dụng',
+          level: 'Nhân viên',
+          contract: 'Xác định thời hạn',
+          startDate: '2024-04-01',
+          contractEnd: '2027-04-01',
+          status: 'Nghỉ phép dài hạn',
+          manager: 'Nguyễn Thị Mai Anh',
+          phone: '0936223344',
+          email: 'linh.dk@viethr.vn',
+          personalEmail: 'khanhlinh.hp@gmail.com',
+          emgName: 'Đặng Văn Đức',
+          emgRel: 'Bố',
+          emgPhone: '0936223300',
+          salary: 16500000,
+          allowance: 2000000,
+          bank: 'Vietcombank',
+          bankAcc: '0031000556677',
+          bankBranch: 'CN TP. Hồ Chí Minh',
+          taxCode: '8099001122',
+          bhxh: '7929001100'
+        },
+        {
+          id: 'emp-10',
+          code: 'NV010',
+          name: 'Phan Thanh Tùng',
+          avatar: '',
+          dob: '1994-11-18',
+          gender: 'Nam',
+          marital: 'Đã kết hôn',
+          idCard: '075094002310',
+          idCardDate: '2021-01-25',
+          idCardPlace: 'Cục CSQLHC về TTXH',
+          hometown: 'TP. Vũng Tàu, Bà Rịa - Vũng Tàu',
+          address: 'Quận 8, TP. Hồ Chí Minh',
+          dept: 'Sản xuất / Vận hành',
+          role: 'Chuyên viên Điều phối Vận hành',
+          level: 'Nhân viên',
+          contract: 'Xác định thời hạn',
+          startDate: '2023-02-01',
+          contractEnd: '2025-02-01',
+          status: 'Đã nghỉ việc',
+          manager: 'Bùi Quang Huy',
+          phone: '0918887766',
+          email: 'tung.pt@viethr.vn',
+          personalEmail: 'thanhtung.vt@gmail.com',
+          emgName: 'Phan Thị Thu',
+          emgRel: 'Mẹ',
+          emgPhone: '0918887700',
+          salary: 17000000,
+          allowance: 2000000,
+          bank: 'Sacombank',
+          bankAcc: '06023456789',
+          bankBranch: 'CN Quận 8',
+          taxCode: '8010203040',
+          bhxh: '7930009911'
+        }
+      ];
+    }
+
+    let employees = [];
+    let prefs = {
+      activeTab: 'dashboard',
+      directoryLayout: 'table',
+      salaryMode: 'GROSS'
+    };
+    let charts = {};
+    let pendingDeleteId = null;
+
+    function loadState() {
+      try {
+        const rawOrg = localStorage.getItem(ORG_KEY);
+        if (rawOrg) {
+          orgSettings = { ...getDefaultOrgSettings(), ...JSON.parse(rawOrg) };
+        } else {
+          orgSettings = getDefaultOrgSettings();
+        }
+      } catch (err) {
+        console.error('Lỗi tải cấu hình đơn vị:', err);
+        orgSettings = getDefaultOrgSettings();
+      }
+
+      try {
+        const rawPrefs = localStorage.getItem(PREFS_KEY);
+        if (rawPrefs) {
+          prefs = { ...prefs, ...JSON.parse(rawPrefs) };
+        }
+      } catch (err) {
+        console.error('Lỗi tải tùy chọn giao diện:', err);
+      }
+
+      try {
+        const rawEmp = localStorage.getItem(STORAGE_KEY);
+        if (rawEmp) {
+          const parsedEmp = JSON.parse(rawEmp);
+          employees = Array.isArray(parsedEmp) ? parsedEmp : getDefaultEmployees();
+        } else {
+          employees = getDefaultEmployees();
+          saveEmployees();
+        }
+      } catch (err) {
+        console.error('Lỗi tải danh sách nhân sự:', err);
+        employees = getDefaultEmployees();
+      }
+    }
+
+    function saveEmployees() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+      } catch (err) {
+        console.error('Lỗi lưu danh sách nhân sự:', err);
+        showToast('Không thể lưu vào bộ nhớ trình duyệt (có thể do dung lượng ảnh lớn).', 'error');
+      }
+      updateNavBadge();
+    }
+
+    function savePrefs() {
+      try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+      } catch (err) {
+        console.error('Lỗi lưu tùy chọn:', err);
+      }
+    }
+
+    function saveOrgSettings() {
+      try {
+        localStorage.setItem(ORG_KEY, JSON.stringify(orgSettings));
+      } catch (err) {
+        console.error('Lỗi lưu cấu hình đơn vị:', err);
+        showToast('Không thể lưu cấu hình đơn vị vào bộ nhớ trình duyệt.', 'error');
+      }
+    }
+
+    function escapeHtml(str) {
+      if (str === undefined || str === null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getInitials(name) {
+      const clean = String(name || '').trim();
+      if (!clean) return 'NV';
+      const parts = clean.split(/\s+/);
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function formatVND(amount) {
+      const num = Number(amount) || 0;
+      const unit = orgSettings.currency || 'VNĐ';
+      return `${num.toLocaleString('vi-VN')} ${unit}`;
+    }
+
+    function formatCompactVND(amount) {
+      const num = Number(amount) || 0;
+      const unit = orgSettings.currency || 'VNĐ';
+      if (Math.abs(num) >= 1e9) {
+        return `${(num / 1e9).toFixed(2).replace('.', ',')} tỷ ${unit}`;
+      }
+      if (Math.abs(num) >= 1e6) {
+        return `${(num / 1e6).toFixed(1).replace('.', ',')} tr ${unit}`;
+      }
+      return formatVND(num);
+    }
+
+    function formatDateVN(dateStr) {
+      if (!dateStr) return '—';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return String(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function calculateTenureYears(startDateStr) {
+      if (!startDateStr) return 0;
+      const start = new Date(startDateStr);
+      if (isNaN(start.getTime())) return 0;
+      const diffMs = Date.now() - start.getTime();
+      return Math.max(0, diffMs / (1000 * 60 * 60 * 24 * 365.25));
+    }
+
+    function getEstimatedMonthlyIncome(emp, mode = 'GROSS') {
+      const base = Number(emp.salary) || 0;
+      const allowance = Number(emp.allowance) || 0;
+      const gross = base + allowance;
+      if (mode === 'NET') {
+        return Math.round(gross * 0.85);
+      }
+      return gross;
+    }
+
+    function getStatusBadge(status) {
+      switch (status) {
+        case 'Đang làm việc':
+          return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Đang làm việc</span>`;
+        case 'Thử việc':
+          return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Thử việc</span>`;
+        case 'Nghỉ phép dài hạn':
+          return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800">Nghỉ phép dài hạn</span>`;
+        case 'Đã nghỉ việc':
+          return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">Đã nghỉ việc</span>`;
+        default:
+          return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${escapeHtml(status || 'Khác')}</span>`;
+      }
+    }
+
+    function renderAvatarHTML(emp, sizeClasses = 'w-10 h-10 text-sm rounded-xl') {
+      const initials = escapeHtml(getInitials(emp?.name));
+      const safeName = escapeHtml(emp?.name || 'Nhân sự');
+      if (emp?.avatar) {
+        return `<img src="${emp.avatar}" alt="${safeName}" class="${sizeClasses} object-cover shrink-0 border border-slate-200" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><span style="display:none" class="${sizeClasses} bg-blue-700 text-white font-bold items-center justify-center shrink-0">${initials}</span>`;
+      }
+      return `<span class="${sizeClasses} bg-gradient-to-br from-blue-700 to-indigo-700 text-white font-bold inline-flex items-center justify-center shrink-0">${initials}</span>`;
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const styles = {
+        success: 'bg-emerald-900 text-white border-emerald-700',
+        error: 'bg-rose-900 text-white border-rose-700',
+        info: 'bg-slate-900 text-white border-slate-700'
+      };
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-3 rounded-xl border shadow-lg text-sm font-medium flex items-center justify-between gap-3 ${styles[type] || styles.info}`;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span><button type="button" class="text-white/75 hover:text-white font-bold cursor-pointer" onclick="this.parentElement.remove()">✕</button>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        if (toast.parentElement) toast.remove();
+      }, 3600);
+    }
+
+    function toggleDataMenu(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById('data-menu-dropdown');
+      const btn = document.getElementById('data-menu-btn');
+      if (!menu) return;
+      const willOpen = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden');
+      if (btn) btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+
+    function closeDataMenu() {
+      const menu = document.getElementById('data-menu-dropdown');
+      const btn = document.getElementById('data-menu-btn');
+      if (menu) menu.classList.add('hidden');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    function closeDataMenu() {
+      const menu = document.getElementById('data-menu-dropdown');
+      if (menu) menu.classList.add('hidden');
+    }
+
+    function backdropCloseModal(event, modalId) {
+      if (event.target && event.target.id === modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('hidden');
+      }
+    }
+
+    function updateNavBadge() {
+      const badge = document.getElementById('nav-count-badge');
+      if (badge) badge.textContent = String(employees.length);
+    }
+
+    function switchMode(mode) {
+      prefs.activeTab = mode === 'directory' ? 'directory' : 'dashboard';
+      savePrefs();
+
+      const dashView = document.getElementById('dashboard-view');
+      const dirView = document.getElementById('directory-view');
+      const tabDash = document.getElementById('tab-dashboard');
+      const tabDir = document.getElementById('tab-directory');
+
+      if (prefs.activeTab === 'directory') {
+        dashView?.classList.add('hidden');
+        dirView?.classList.remove('hidden');
+        tabDir?.classList.remove('text-slate-600', 'hover:text-slate-900');
+        tabDir?.classList.add('bg-blue-800', 'text-white', 'shadow-sm');
+        tabDash?.classList.remove('bg-blue-800', 'text-white', 'shadow-sm');
+        tabDash?.classList.add('text-slate-600', 'hover:text-slate-900');
+        renderDirectory();
+      } else {
+        dirView?.classList.add('hidden');
+        dashView?.classList.remove('hidden');
+        tabDash?.classList.remove('text-slate-600', 'hover:text-slate-900');
+        tabDash?.classList.add('bg-blue-800', 'text-white', 'shadow-sm');
+        tabDir?.classList.remove('bg-blue-800', 'text-white', 'shadow-sm');
+        tabDir?.classList.add('text-slate-600', 'hover:text-slate-900');
+        renderDashboard();
+      }
+    }
+
+    function populateRoleFilter() {
+      const roleSelect = document.getElementById('filter-role');
+      if (!roleSelect) return;
+      const cur = roleSelect.value;
+      const roles = [...new Set(employees.map(e => e.role).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+      roleSelect.innerHTML = `<option value="ALL">Mọi chức vụ</option>` +
+        roles.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+      if (cur && [...roleSelect.options].some(o => o.value === cur)) roleSelect.value = cur;
+    }
+
+    function setDirectoryLayout(layout) {
+      prefs.directoryLayout = layout === 'grid' ? 'grid' : 'table';
+      savePrefs();
+
+      const tableBtn = document.getElementById('view-mode-table');
+      const gridBtn = document.getElementById('view-mode-grid');
+      const tableWrap = document.getElementById('directory-table-container');
+      const gridWrap = document.getElementById('directory-grid-container');
+
+      if (prefs.directoryLayout === 'grid') {
+        gridBtn?.classList.remove('text-slate-600', 'hover:text-slate-900');
+        gridBtn?.classList.add('bg-slate-900', 'text-white');
+        tableBtn?.classList.remove('bg-slate-900', 'text-white');
+        tableBtn?.classList.add('text-slate-600', 'hover:text-slate-900');
+        tableWrap?.classList.add('hidden');
+        gridWrap?.classList.remove('hidden');
+        gridWrap?.classList.add('grid');
+      } else {
+        tableBtn?.classList.remove('text-slate-600', 'hover:text-slate-900');
+        tableBtn?.classList.add('bg-slate-900', 'text-white');
+        gridBtn?.classList.remove('bg-slate-900', 'text-white');
+        gridBtn?.classList.add('text-slate-600', 'hover:text-slate-900');
+        gridWrap?.classList.add('hidden');
+        gridWrap?.classList.remove('grid');
+        tableWrap?.classList.remove('hidden');
+      }
+      renderDirectory();
+    }
+
+    function getFilteredEmployees() {
+      const q = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
+      const dept = document.getElementById('filter-dept')?.value || 'ALL';
+      const role = document.getElementById('filter-role')?.value || 'ALL';
+      const status = document.getElementById('filter-status')?.value || 'ALL';
+
+      return employees.filter(e => {
+        if (dept !== 'ALL' && e.dept !== dept) return false;
+        if (role !== 'ALL' && e.role !== role) return false;
+        if (status !== 'ALL' && e.status !== status) return false;
+        if (q) {
+          const hay = `${e.code || ''} ${e.name || ''} ${e.email || ''} ${e.phone || ''} ${e.idCard || ''} ${e.role || ''} ${e.dept || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function resetDirectoryFilters() {
+      const searchEl = document.getElementById('filter-search');
+      const deptEl = document.getElementById('filter-dept');
+      const roleEl = document.getElementById('filter-role');
+      const statusEl = document.getElementById('filter-status');
+      if (searchEl) searchEl.value = '';
+      if (deptEl) deptEl.value = 'ALL';
+      if (roleEl) roleEl.value = 'ALL';
+      if (statusEl) statusEl.value = 'ALL';
+      renderDirectory();
+    }
+
+    function renderDirectory() {
+      const list = getFilteredEmployees();
+      const summary = document.getElementById('directory-result-summary');
+      if (summary) {
+        summary.textContent = `Hiển thị ${list.length} / ${employees.length} nhân sự`;
+      }
+
+      const tbody = document.getElementById('employee-table-body');
+      if (tbody) {
+        tbody.innerHTML = list.length > 0
+          ? list.map(e => {
+              const totalIncome = (Number(e.salary) || 0) + (Number(e.allowance) || 0);
+              return `
+                <tr class="hover:bg-slate-50/80 transition">
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-3 cursor-pointer" onclick="openDetailModal('${e.id}')">
+                      ${renderAvatarHTML(e, 'w-10 h-10 text-xs rounded-xl')}
+                      <div class="min-w-0">
+                        <p class="font-bold text-slate-900 truncate hover:text-blue-700">${escapeHtml(e.name)}</p>
+                        <p class="text-xs font-mono text-slate-500">${escapeHtml(e.code)} • ${escapeHtml(e.gender || '—')}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-3">
+                    <p class="font-semibold text-slate-800">${escapeHtml(e.role)}</p>
+                    <p class="text-xs text-slate-500">${escapeHtml(e.dept)} • ${escapeHtml(e.level || '—')}</p>
+                  </td>
+                  <td class="py-3 px-3 text-xs">
+                    <p class="text-slate-800 font-medium">${escapeHtml(e.phone || '—')}</p>
+                    <p class="text-slate-500 truncate max-w-[190px]">${escapeHtml(e.email || '—')}</p>
+                  </td>
+                  <td class="py-3 px-3 text-xs">
+                    <p class="text-slate-800 font-medium">${formatDateVN(e.startDate)}</p>
+                    <p class="text-slate-500">${escapeHtml(e.contract || '—')}</p>
+                  </td>
+                  <td class="py-3 px-3 text-right">
+                    <p class="font-bold text-slate-900">${formatCompactVND(totalIncome)}</p>
+                    <p class="text-[11px] text-slate-400">CB: ${formatCompactVND(e.salary)}</p>
+                  </td>
+                  <td class="py-3 px-3">${getStatusBadge(e.status)}</td>
+                  <td class="py-3 px-4 text-right whitespace-nowrap no-print">
+                    <button type="button" onclick="openDetailModal('${e.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer mr-1">Xem</button>
+                    <button type="button" onclick="openEmployeeModal('${e.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 cursor-pointer mr-1">Sửa</button>
+                    <button type="button" onclick="openDeleteModal('${e.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 cursor-pointer">Xóa</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')
+          : `<tr><td colspan="7" class="py-10 px-4 text-center text-sm text-slate-400">Không tìm thấy hồ sơ nhân sự nào phù hợp bộ lọc.</td></tr>`;
+      }
+
+      const gridContainer = document.getElementById('directory-grid-container');
+      if (gridContainer) {
+        gridContainer.innerHTML = list.length > 0
+          ? list.map(e => {
+              const totalIncome = (Number(e.salary) || 0) + (Number(e.allowance) || 0);
+              return `
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-4 card-shadow card-shadow-hover transition flex flex-col justify-between gap-3">
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex items-center gap-3 min-w-0 cursor-pointer" onclick="openDetailModal('${e.id}')">
+                        ${renderAvatarHTML(e, 'w-12 h-12 text-sm rounded-xl')}
+                        <div class="min-w-0">
+                          <h3 class="font-bold text-slate-900 truncate hover:text-blue-700">${escapeHtml(e.name)}</h3>
+                          <p class="text-xs font-mono text-slate-500">${escapeHtml(e.code)}</p>
+                        </div>
+                      </div>
+                      ${getStatusBadge(e.status)}
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-100 text-xs space-y-1">
+                      <p><span class="text-slate-400">Chức vụ:</span> <strong class="text-slate-700">${escapeHtml(e.role)}</strong></p>
+                      <p><span class="text-slate-400">Phòng ban:</span> <span class="text-slate-700">${escapeHtml(e.dept)}</span></p>
+                      <p><span class="text-slate-400">Email:</span> <span class="text-slate-700">${escapeHtml(e.email || '—')}</span></p>
+                      <p><span class="text-slate-400">Thu nhập:</span> <strong class="text-blue-800">${formatCompactVND(totalIncome)}</strong></p>
+                    </div>
+                  </div>
+                  <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-1.5 no-print">
+                    <button type="button" onclick="openDetailModal('${e.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer">Hồ sơ</button>
+                    <button type="button" onclick="openEmployeeModal('${e.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 cursor-pointer">Sửa</button>
+                    <button type="button" onclick="openDeleteModal('${e.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 cursor-pointer">Xóa</button>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : `<div class="col-span-full py-10 text-center text-sm text-slate-400 bg-white rounded-2xl border border-slate-200">Không tìm thấy nhân sự nào.</div>`;
+      }
+    }
+
+    function openDetailModal(empId) {
+      const emp = employees.find(e => e.id === empId);
+      if (!emp) return;
+      const totalIncome = (Number(emp.salary) || 0) + (Number(emp.allowance) || 0);
+      const modalContent = document.getElementById('detail-modal-content');
+      if (!modalContent) return;
+
+      modalContent.innerHTML = `
+        <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-blue-900 text-white flex items-center justify-between gap-4">
+          <div class="flex items-center gap-4 min-w-0">
+            ${renderAvatarHTML(emp, 'w-14 h-14 text-lg rounded-2xl border-2 border-white/30')}
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-lg font-bold truncate">${escapeHtml(emp.name)}</h2>
+                <span class="px-2 py-0.5 rounded-md text-xs font-mono bg-white/15">${escapeHtml(emp.code)}</span>
+                ${getStatusBadge(emp.status)}
+              </div>
+              <p class="text-xs text-blue-100 truncate mt-0.5">${escapeHtml(emp.role)} • ${escapeHtml(emp.dept)}</p>
+            </div>
+          </div>
+          <button type="button" onclick="closeDetailModal()" class="p-1.5 rounded-lg hover:bg-white/15 cursor-pointer shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-sm">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-2">Thông tin cá nhân</h3>
+              <p><span class="text-slate-500">Ngày sinh:</span> <strong>${formatDateVN(emp.dob)}</strong></p>
+              <p><span class="text-slate-500">Giới tính / Hôn nhân:</span> <strong>${escapeHtml(emp.gender || '—')} • ${escapeHtml(emp.marital || '—')}</strong></p>
+              <p><span class="text-slate-500">Số CCCD:</span> <strong>${escapeHtml(emp.idCard || '—')}</strong></p>
+              <p><span class="text-slate-500">Quê quán:</span> <strong>${escapeHtml(emp.hometown || '—')}</strong></p>
+              <p><span class="text-slate-500">Chỗ ở hiện tại:</span> <strong>${escapeHtml(emp.address || '—')}</strong></p>
+            </div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-2">Công việc & Hợp đồng</h3>
+              <p><span class="text-slate-500">Phòng ban:</span> <strong>${escapeHtml(emp.dept)}</strong></p>
+              <p><span class="text-slate-500">Chức vụ / Cấp bậc:</span> <strong>${escapeHtml(emp.role)} (${escapeHtml(emp.level || '—')})</strong></p>
+              <p><span class="text-slate-500">Loại hợp đồng:</span> <strong>${escapeHtml(emp.contract || '—')}</strong></p>
+              <p><span class="text-slate-500">Ngày vào làm:</span> <strong>${formatDateVN(emp.startDate)}</strong></p>
+              <p><span class="text-slate-500">Quản lý trực tiếp:</span> <strong>${escapeHtml(emp.manager || '—')}</strong></p>
+            </div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-2">Liên hệ & Khẩn cấp</h3>
+              <p><span class="text-slate-500">Điện thoại:</span> <strong>${escapeHtml(emp.phone || '—')}</strong></p>
+              <p><span class="text-slate-500">Email công ty:</span> <strong>${escapeHtml(emp.email || '—')}</strong></p>
+              <p><span class="text-slate-500">Email cá nhân:</span> <strong>${escapeHtml(emp.personalEmail || '—')}</strong></p>
+              <p><span class="text-slate-500">Liên hệ khẩn cấp:</span> <strong>${escapeHtml(emp.emgName || '—')} (${escapeHtml(emp.emgRel || '—')})</strong></p>
+              <p><span class="text-slate-500">SĐT khẩn cấp:</span> <strong>${escapeHtml(emp.emgPhone || '—')}</strong></p>
+            </div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-blue-900 mb-2">Lương, Ngân hàng & Thuế/BHXH</h3>
+              <p><span class="text-slate-500">Lương cơ bản:</span> <strong>${formatVND(emp.salary)}</strong></p>
+              <p><span class="text-slate-500">Phụ cấp:</span> <strong>${formatVND(emp.allowance)}</strong></p>
+              <p><span class="text-slate-500">Tổng thu nhập:</span> <strong class="text-blue-800">${formatVND(totalIncome)}</strong></p>
+              <p><span class="text-slate-500">Ngân hàng:</span> <strong>${escapeHtml(emp.bank || '—')} • ${escapeHtml(emp.bankAcc || '—')}</strong></p>
+              <p><span class="text-slate-500">MST / BHXH:</span> <strong>${escapeHtml(emp.taxCode || '—')} / ${escapeHtml(emp.bhxh || '—')}</strong></p>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <button type="button" onclick="printSingleEmployee('${emp.id}')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 cursor-pointer">In hồ sơ A4</button>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="closeDetailModal(); openEmployeeModal('${emp.id}');" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 cursor-pointer">Chỉnh sửa</button>
+            <button type="button" onclick="closeDetailModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 cursor-pointer">Đóng</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    function updateFormAvatarPreview() {
+      const preview = document.getElementById('form-avatar-preview');
+      const avatarData = document.getElementById('emp-avatar-data')?.value || '';
+      const nameVal = document.getElementById('emp-name')?.value || 'NV';
+      if (!preview) return;
+      if (avatarData) {
+        preview.innerHTML = `<img src="${avatarData}" alt="${escapeHtml(nameVal)}" class="w-full h-full object-cover" />`;
+      } else {
+        preview.innerHTML = `<span>${escapeHtml(getInitials(nameVal))}</span>`;
+      }
+    }
+
+    function updateFormAvatarInitials() {
+      if (!document.getElementById('emp-avatar-data')?.value) {
+        updateFormAvatarPreview();
+      }
+    }
+
+    function handleAvatarUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('Vui lòng chọn tệp hình ảnh hợp lệ.', 'error');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Ảnh vượt quá 2MB, vui lòng chọn ảnh nhỏ hơn.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById('emp-avatar-data').value = e.target.result;
+        updateFormAvatarPreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function pickPresetAvatar() {
+      const picked = PRESET_PORTRAITS[Math.floor(Math.random() * PRESET_PORTRAITS.length)];
+      document.getElementById('emp-avatar-data').value = picked;
+      updateFormAvatarPreview();
+    }
+
+    function clearAvatarToInitials() {
+      document.getElementById('emp-avatar-data').value = '';
+      const fileInput = document.getElementById('emp-avatar-file');
+      if (fileInput) fileInput.value = '';
+      updateFormAvatarPreview();
+    }
+
+    function openEmployeeModal(empId = null) {
+      syncDepartmentAndLevelSelects();
+      const form = document.getElementById('employee-form');
+      if (form) form.reset();
+
+      const titleEl = document.getElementById('form-modal-title');
+      if (empId) {
+        const emp = employees.find(e => e.id === empId);
+        if (!emp) return;
+        if (titleEl) titleEl.textContent = `Cập nhật hồ sơ nhân sự — ${emp.name}`;
+        document.getElementById('emp-id').value = emp.id;
+        document.getElementById('emp-code').value = emp.code || '';
+        document.getElementById('emp-name').value = emp.name || '';
+        document.getElementById('emp-avatar-data').value = emp.avatar || '';
+        document.getElementById('emp-dob').value = emp.dob || '';
+        document.getElementById('emp-gender').value = emp.gender || 'Nam';
+        document.getElementById('emp-marital').value = emp.marital || 'Độc thân';
+        document.getElementById('emp-idcard').value = emp.idCard || '';
+        document.getElementById('emp-idcard-date').value = emp.idCardDate || '';
+        document.getElementById('emp-idcard-place').value = emp.idCardPlace || '';
+        document.getElementById('emp-hometown').value = emp.hometown || '';
+        document.getElementById('emp-address').value = emp.address || '';
+        document.getElementById('emp-dept').value = emp.dept || (orgSettings.departments?.[0] || 'Kỹ thuật');
+        document.getElementById('emp-role').value = emp.role || '';
+        document.getElementById('emp-level').value = emp.level || (orgSettings.levels?.[1] || 'Nhân viên');
+        document.getElementById('emp-contract').value = emp.contract || 'Xác định thời hạn';
+        document.getElementById('emp-startdate').value = emp.startDate || '';
+        document.getElementById('emp-contract-end').value = emp.contractEnd || '';
+        document.getElementById('emp-status').value = emp.status || 'Đang làm việc';
+        document.getElementById('emp-manager').value = emp.manager || '';
+        document.getElementById('emp-phone').value = emp.phone || '';
+        document.getElementById('emp-email').value = emp.email || '';
+        document.getElementById('emp-personal-email').value = emp.personalEmail || '';
+        document.getElementById('emp-emg-name').value = emp.emgName || '';
+        document.getElementById('emp-emg-rel').value = emp.emgRel || '';
+        document.getElementById('emp-emg-phone').value = emp.emgPhone || '';
+        document.getElementById('emp-salary').value = emp.salary ?? 0;
+        document.getElementById('emp-allowance').value = emp.allowance ?? 0;
+        document.getElementById('emp-bank').value = emp.bank || '';
+        document.getElementById('emp-bank-acc').value = emp.bankAcc || '';
+        document.getElementById('emp-bank-branch').value = emp.bankBranch || '';
+        document.getElementById('emp-tax').value = emp.taxCode || '';
+        document.getElementById('emp-bhxh').value = emp.bhxh || '';
+      } else {
+        if (titleEl) titleEl.textContent = 'Thêm hồ sơ nhân sự mới';
+        document.getElementById('emp-id').value = '';
+        const nextNum = employees.length + 1;
+        document.getElementById('emp-code').value = `NV${String(nextNum).padStart(3, '0')}`;
+        document.getElementById('emp-startdate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('emp-avatar-data').value = '';
+      }
+
+      updateFormAvatarPreview();
+      document.getElementById('form-modal').classList.remove('hidden');
+    }
+
+    function closeEmployeeModal() {
+      document.getElementById('form-modal').classList.add('hidden');
+    }
+
+    function saveEmployeeForm(event) {
+      event.preventDefault();
+      const existingId = document.getElementById('emp-id').value.trim();
+      const payload = {
+        id: existingId || `emp-${Date.now()}`,
+        code: document.getElementById('emp-code').value.trim(),
+        name: document.getElementById('emp-name').value.trim(),
+        avatar: document.getElementById('emp-avatar-data').value || '',
+        dob: document.getElementById('emp-dob').value,
+        gender: document.getElementById('emp-gender').value,
+        marital: document.getElementById('emp-marital').value,
+        idCard: document.getElementById('emp-idcard').value.trim(),
+        idCardDate: document.getElementById('emp-idcard-date').value,
+        idCardPlace: document.getElementById('emp-idcard-place').value.trim(),
+        hometown: document.getElementById('emp-hometown').value.trim(),
+        address: document.getElementById('emp-address').value.trim(),
+        dept: document.getElementById('emp-dept').value,
+        role: document.getElementById('emp-role').value.trim(),
+        level: document.getElementById('emp-level').value,
+        contract: document.getElementById('emp-contract').value,
+        startDate: document.getElementById('emp-startdate').value,
+        contractEnd: document.getElementById('emp-contract-end').value,
+        status: document.getElementById('emp-status').value,
+        manager: document.getElementById('emp-manager').value.trim(),
+        phone: document.getElementById('emp-phone').value.trim(),
+        email: document.getElementById('emp-email').value.trim(),
+        personalEmail: document.getElementById('emp-personal-email').value.trim(),
+        emgName: document.getElementById('emp-emg-name').value.trim(),
+        emgRel: document.getElementById('emp-emg-rel').value.trim(),
+        emgPhone: document.getElementById('emp-emg-phone').value.trim(),
+        salary: normalizeNumber(document.getElementById('emp-salary').value, 0),
+        allowance: normalizeNumber(document.getElementById('emp-allowance').value, 0),
+        bank: document.getElementById('emp-bank').value.trim(),
+        bankAcc: document.getElementById('emp-bank-acc').value.trim(),
+        bankBranch: document.getElementById('emp-bank-branch').value.trim(),
+        taxCode: document.getElementById('emp-tax').value.trim(),
+        bhxh: document.getElementById('emp-bhxh').value.trim()
+      };
+
+      if (existingId) {
+        const idx = employees.findIndex(e => e.id === existingId);
+        if (idx !== -1) {
+          employees[idx] = payload;
+        } else {
+          employees.unshift(payload);
+        }
+        showToast(`Đã cập nhật hồ sơ của ${payload.name}.`);
+      } else {
+        employees.unshift(payload);
+        showToast(`Đã thêm hồ sơ nhân sự ${payload.name}.`);
+      }
+
+      saveEmployees();
+      populateRoleFilter();
+      renderDirectory();
+      renderDashboard();
+      closeEmployeeModal();
+    }
+
+    function openDeleteModal(empId) {
+      const emp = employees.find(e => e.id === empId);
+      if (!emp) return;
+      pendingDeleteId = empId;
+      const desc = document.getElementById('delete-modal-desc');
+      if (desc) {
+        desc.textContent = `Bạn có chắc chắn muốn xóa hồ sơ của ${emp.name} (${emp.code}) khỏi hệ thống?`;
+      }
+      const confirmBtn = document.getElementById('confirm-delete-btn');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          if (!pendingDeleteId) return;
+          employees = employees.filter(e => e.id !== pendingDeleteId);
+          pendingDeleteId = null;
+          saveEmployees();
+          populateRoleFilter();
+          renderDirectory();
+          renderDashboard();
+          closeDeleteModal();
+          showToast('Đã xóa hồ sơ nhân sự.', 'info');
+        };
+      }
+      document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      pendingDeleteId = null;
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    function exportJSON() {
+      const bundle = {
+        exportedAt: new Date().toISOString(),
+        orgSettings,
+        employees
+      };
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `viethr-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất tệp sao lưu JSON.');
+    }
+
+    function importJSON(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const parsed = JSON.parse(String(e.target.result || '{}'));
+          const incomingList = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.employees) ? parsed.employees : null);
+          if (!incomingList) {
+            showToast('Định dạng tệp JSON không hợp lệ.', 'error');
+            return;
+          }
+          employees = incomingList;
+          if (parsed.orgSettings && typeof parsed.orgSettings === 'object') {
+            orgSettings = { ...getDefaultOrgSettings(), ...parsed.orgSettings };
+            saveOrgSettings();
+            applyOrgBrandingToUI();
+            syncDepartmentAndLevelSelects();
+          }
+          saveEmployees();
+          populateRoleFilter();
+          renderDirectory();
+          renderDashboard();
+          showToast(`Đã nhập ${employees.length} hồ sơ từ JSON.`);
+        } catch (err) {
+          console.error('Lỗi nhập JSON:', err);
+          showToast('Không thể đọc tệp JSON này.', 'error');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function resetSampleData() {
+      employees = getDefaultEmployees();
+      saveEmployees();
+      populateRoleFilter();
+      renderDirectory();
+      renderDashboard();
+      showToast('Đã khôi phục 10 hồ sơ nhân sự mẫu.', 'info');
+    }
+
+    function applyOrgBrandingToUI() {
+      const nameEl = document.getElementById('brand-name-display');
+      const subEl = document.getElementById('brand-sub-display');
+      const codeEl = document.getElementById('brand-code-badge');
+      const logoBox = document.getElementById('brand-logo-box');
+
+      const orgName = orgSettings.name || 'ViệtHR Analytics';
+      if (nameEl) nameEl.textContent = orgName;
+      if (subEl) {
+        subEl.textContent = orgSettings.address
+          ? `${orgSettings.address}${orgSettings.taxCode ? ` • MST: ${orgSettings.taxCode}` : ''}`
+          : 'Quản trị nguồn nhân lực & Báo cáo phân tích';
+      }
+      if (codeEl) {
+        codeEl.textContent = orgSettings.code ? `${orgSettings.code} • A4` : 'A4 Ready';
+      }
+      if (logoBox) {
+        if (orgSettings.logo) {
+          logoBox.innerHTML = `<img src="${orgSettings.logo}" alt="${escapeHtml(orgName)}" class="w-full h-full object-cover" />`;
+        } else {
+          logoBox.innerHTML = `<span class="text-xs font-extrabold tracking-tight">${escapeHtml(getInitials(orgName))}</span>`;
+        }
+      }
+      document.title = `${orgName} — HRM & HR Analytics`;
+    }
+
+    function syncDepartmentAndLevelSelects() {
+      const depts = Array.isArray(orgSettings.departments) && orgSettings.departments.length > 0
+        ? orgSettings.departments
+        : DEFAULT_DEPARTMENTS;
+      const levels = Array.isArray(orgSettings.levels) && orgSettings.levels.length > 0
+        ? orgSettings.levels
+        : DEFAULT_LEVELS;
+
+      const empDept = document.getElementById('emp-dept');
+      if (empDept) {
+        const cur = empDept.value;
+        empDept.innerHTML = depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+        if (cur && depts.includes(cur)) empDept.value = cur;
+      }
+
+      const empLevel = document.getElementById('emp-level');
+      if (empLevel) {
+        const cur = empLevel.value;
+        empLevel.innerHTML = levels.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+        if (cur && levels.includes(cur)) empLevel.value = cur;
+      }
+
+      const filterDept = document.getElementById('filter-dept');
+      if (filterDept) {
+        const cur = filterDept.value;
+        filterDept.innerHTML = `<option value="ALL">Mọi phòng ban</option>` +
+          depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+        if (cur && [...filterDept.options].some(o => o.value === cur)) filterDept.value = cur;
+      }
+
+      const dashDept = document.getElementById('dash-dept-filter');
+      if (dashDept) {
+        const cur = dashDept.value;
+        dashDept.innerHTML = `<option value="ALL">Tất cả phòng ban</option>` +
+          depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+        if (cur && [...dashDept.options].some(o => o.value === cur)) dashDept.value = cur;
+      }
+    }
+
+    function setSalaryViewMode(mode) {
+      prefs.salaryMode = mode === 'NET' ? 'NET' : 'GROSS';
+      savePrefs();
+      const grossBtn = document.getElementById('salary-mode-gross');
+      const netBtn = document.getElementById('salary-mode-net');
+      if (grossBtn && netBtn) {
+        if (prefs.salaryMode === 'NET') {
+          netBtn.className = 'px-2.5 py-1.5 rounded-lg bg-blue-800 text-white cursor-pointer';
+          grossBtn.className = 'px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 cursor-pointer';
+        } else {
+          grossBtn.className = 'px-2.5 py-1.5 rounded-lg bg-blue-800 text-white cursor-pointer';
+          netBtn.className = 'px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 cursor-pointer';
+        }
+      }
+      renderDashboard();
+    }
+
+    function rebuildChart(key, canvasId, config) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || typeof Chart === 'undefined') return;
+      if (charts[key]) {
+        charts[key].destroy();
+      }
+      charts[key] = new Chart(canvas.getContext('2d'), config);
+    }
+
+    function renderDashboard() {
+      const selectedDept = document.getElementById('dash-dept-filter')?.value || 'ALL';
+      const scoped = selectedDept === 'ALL' ? employees : employees.filter(e => e.dept === selectedDept);
+      const activeList = scoped.filter(e => e.status === 'Đang làm việc' || e.status === 'Thử việc');
+      const probationList = scoped.filter(e => e.status === 'Thử việc');
+
+      const totalPayroll = activeList.reduce((sum, e) => sum + getEstimatedMonthlyIncome(e, prefs.salaryMode), 0);
+      const avgIncome = activeList.length > 0 ? Math.round(totalPayroll / activeList.length) : 0;
+      const avgTenure = activeList.length > 0
+        ? (activeList.reduce((sum, e) => sum + calculateTenureYears(e.startDate), 0) / activeList.length).toFixed(1)
+        : '0.0';
+
+      const kpiGrid = document.getElementById('kpi-grid');
+      if (kpiGrid) {
+        const kpis = [
+          { label: 'Tổng hồ sơ', value: scoped.length, sub: `${activeList.length} đang hoạt động`, badge: 'bg-blue-50 text-blue-700' },
+          { label: 'Đang làm việc', value: scoped.filter(e => e.status === 'Đang làm việc').length, sub: 'Chính thức', badge: 'bg-emerald-50 text-emerald-700' },
+          { label: 'Đang thử việc', value: probationList.length, sub: 'Cần đánh giá', badge: 'bg-amber-50 text-amber-700' },
+          { label: `Quỹ lương (${prefs.salaryMode})`, value: formatCompactVND(totalPayroll), sub: 'Ước tính / tháng', badge: 'bg-indigo-50 text-indigo-700' },
+          { label: 'Thu nhập TB', value: formatCompactVND(avgIncome), sub: 'Nhóm hoạt động', badge: 'bg-cyan-50 text-cyan-700' },
+          { label: 'Thâm niên TB', value: `${avgTenure} năm`, sub: 'Tính tới hiện tại', badge: 'bg-violet-50 text-violet-700' }
+        ];
+        kpiGrid.innerHTML = kpis.map(k => `
+          <div class="bg-white rounded-2xl border border-slate-200/90 p-4 card-shadow print-card">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-slate-500">${escapeHtml(k.label)}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${k.badge}">${escapeHtml(k.sub)}</span>
+            </div>
+            <p class="text-xl font-extrabold text-slate-900 mt-2 truncate">${escapeHtml(String(k.value))}</p>
+          </div>
+        `).join('');
+      }
+
+      const depts = Array.isArray(orgSettings.departments) && orgSettings.departments.length > 0
+        ? orgSettings.departments
+        : [...new Set(employees.map(e => e.dept).filter(Boolean))];
+      const deptCounts = depts.map(d => scoped.filter(e => e.dept === d).length);
+
+      rebuildChart('dept', 'chart-dept', {
+        type: 'doughnut',
+        data: {
+          labels: depts,
+          datasets: [{
+            data: deptCounts,
+            backgroundColor: ['#1d4ed8', '#0d9488', '#4f46e5', '#d97706', '#e11d48', '#64748b'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        }
+      });
+
+      const now = new Date();
+      const monthLabels = [];
+      const headcountSeries = [];
+      const payrollSeries = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        monthLabels.push(`T${d.getMonth() + 1}/${String(d.getFullYear()).slice(-2)}`);
+        const factor = 1 - i * 0.02;
+        const hc = Math.max(activeList.length - Math.floor(i / 2), 0);
+        headcountSeries.push(hc);
+        payrollSeries.push(Math.round((totalPayroll / 1e6) * factor * (activeList.length ? hc / activeList.length : 1)));
+      }
+
+      rebuildChart('trend', 'chart-trend', {
+        data: {
+          labels: monthLabels,
+          datasets: [
+            {
+              type: 'bar',
+              label: `Quỹ lương (triệu ${orgSettings.currency || 'VNĐ'})`,
+              data: payrollSeries,
+              backgroundColor: 'rgba(29, 78, 216, 0.18)',
+              borderColor: '#1d4ed8',
+              borderWidth: 1.5,
+              borderRadius: 6,
+              yAxisID: 'y1'
+            },
+            {
+              type: 'line',
+              label: 'Nhân sự hoạt động',
+              data: headcountSeries,
+              borderColor: '#0d9488',
+              backgroundColor: '#0d9488',
+              tension: 0.35,
+              pointRadius: 4,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, position: 'left', ticks: { precision: 0 } },
+            y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } }
+          }
+        }
+      });
+
+      const levels = Array.isArray(orgSettings.levels) && orgSettings.levels.length > 0
+        ? orgSettings.levels
+        : ['Thực tập / Thử việc', 'Nhân viên', 'Chuyên viên', 'Trưởng nhóm / Lead', 'Quản lý / Giám đốc'];
+      rebuildChart('level', 'chart-level', {
+        type: 'bar',
+        data: {
+          labels: levels,
+          datasets: [{
+            label: 'Số lượng',
+            data: levels.map(l => scoped.filter(e => e.level === l).length),
+            backgroundColor: '#3b82f6',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+
+      const genders = ['Nam', 'Nữ', 'Khác'];
+      rebuildChart('gender', 'chart-gender', {
+        type: 'pie',
+        data: {
+          labels: genders,
+          datasets: [{
+            data: genders.map(g => scoped.filter(e => e.gender === g).length),
+            backgroundColor: ['#2563eb', '#ec4899', '#8b5cf6'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        }
+      });
+
+      const statuses = ['Đang làm việc', 'Thử việc', 'Nghỉ phép dài hạn', 'Đã nghỉ việc'];
+      rebuildChart('status', 'chart-status', {
+        type: 'bar',
+        data: {
+          labels: statuses,
+          datasets: [{
+            label: 'Nhân sự',
+            data: statuses.map(s => scoped.filter(e => e.status === s).length),
+            backgroundColor: ['#10b981', '#f59e0b', '#0ea5e9', '#f43f5e'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+
+      const alertListEl = document.getElementById('alert-probation-list');
+      const alertCountEl = document.getElementById('alert-probation-count');
+      const attentionEmp = scoped.filter(e => e.status === 'Thử việc' || Boolean(e.contractEnd)).slice(0, 5);
+      if (alertCountEl) alertCountEl.textContent = attentionEmp.length;
+      if (alertListEl) {
+        alertListEl.innerHTML = attentionEmp.length > 0
+          ? attentionEmp.map(e => `
+              <div onclick="openDetailModal('${e.id}')" class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-50/70 border border-amber-100 cursor-pointer hover:bg-amber-50">
+                <div class="min-w-0">
+                  <p class="font-semibold text-slate-900 truncate">${escapeHtml(e.name)} <span class="text-xs font-mono text-slate-500">(${escapeHtml(e.code)})</span></p>
+                  <p class="text-xs text-slate-500">${escapeHtml(e.contract)} • Hạn: ${formatDateVN(e.contractEnd)}</p>
+                </div>
+                ${getStatusBadge(e.status)}
+              </div>
+            `).join('')
+          : `<p class="text-xs text-slate-400 py-4 text-center">Không có hồ sơ thử việc hoặc hạn hợp đồng cần lưu ý.</p>`;
+      }
+
+      const curMonthIdx = now.getMonth();
+      const bdayTitle = document.getElementById('birthday-card-title');
+      if (bdayTitle) bdayTitle.textContent = `Sinh nhật trong tháng ${curMonthIdx + 1}`;
+      const bdayEmp = scoped.filter(e => {
+        if (!e.dob) return false;
+        const d = new Date(e.dob);
+        return !isNaN(d.getTime()) && d.getMonth() === curMonthIdx;
+      });
+      const bdayCountEl = document.getElementById('birthday-count');
+      const bdayListEl = document.getElementById('birthday-list');
+      if (bdayCountEl) bdayCountEl.textContent = bdayEmp.length;
+      if (bdayListEl) {
+        bdayListEl.innerHTML = bdayEmp.length > 0
+          ? bdayEmp.map(e => `
+              <div onclick="openDetailModal('${e.id}')" class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-pink-50/60 border border-pink-100 cursor-pointer hover:bg-pink-50">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  ${renderAvatarHTML(e, 'w-8 h-8 text-xs rounded-lg')}
+                  <div class="min-w-0">
+                    <p class="font-semibold text-slate-900 truncate">${escapeHtml(e.name)}</p>
+                    <p class="text-xs text-slate-500">${escapeHtml(e.dept)}</p>
+                  </div>
+                </div>
+                <span class="text-xs font-bold text-pink-700 shrink-0">${formatDateVN(e.dob)}</span>
+              </div>
+            `).join('')
+          : `<p class="text-xs text-slate-400 py-4 text-center">Không có sinh nhật trong tháng này.</p>`;
+      }
+
+      const topDeptEl = document.getElementById('top-dept-salary-list');
+      if (topDeptEl) {
+        const deptPayrolls = depts.map(d => ({
+          dept: d,
+          cost: activeList.filter(e => e.dept === d).reduce((s, e) => s + getEstimatedMonthlyIncome(e, prefs.salaryMode), 0)
+        })).sort((a, b) => b.cost - a.cost).slice(0, 5);
+        const maxCost = Math.max(...deptPayrolls.map(x => x.cost), 1);
+
+        topDeptEl.innerHTML = deptPayrolls.map(item => {
+          const pct = Math.min(100, Math.round((item.cost / maxCost) * 100));
+          return `
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-semibold text-slate-800 truncate">${escapeHtml(item.dept)}</span>
+                <span class="font-bold text-blue-800">${formatCompactVND(item.cost)}</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full rounded-full bg-blue-700" style="width:${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function openOrgSettingsModal() {
+      document.getElementById('org-name').value = orgSettings.name || '';
+      document.getElementById('org-code').value = orgSettings.code || '';
+      document.getElementById('org-parent').value = orgSettings.parentOrg || '';
+      document.getElementById('org-tax').value = orgSettings.taxCode || '';
+      document.getElementById('org-currency').value = orgSettings.currency || 'VNĐ';
+      document.getElementById('org-address').value = orgSettings.address || '';
+      document.getElementById('org-phone').value = orgSettings.phone || '';
+      document.getElementById('org-email').value = orgSettings.email || '';
+      document.getElementById('org-website').value = orgSettings.website || '';
+      document.getElementById('org-ceo').value = orgSettings.ceo || '';
+      document.getElementById('org-hr-head').value = orgSettings.hrHead || '';
+      document.getElementById('org-logo-data').value = orgSettings.logo || '';
+      document.getElementById('org-departments').value = (orgSettings.departments || DEFAULT_DEPARTMENTS).join('\n');
+      document.getElementById('org-levels').value = (orgSettings.levels || DEFAULT_LEVELS).join('\n');
+      updateOrgLogoPreview();
+      document.getElementById('org-modal').classList.remove('hidden');
+    }
+
+    function closeOrgSettingsModal() {
+      document.getElementById('org-modal').classList.add('hidden');
+    }
+
+    function updateOrgLogoPreview() {
+      const preview = document.getElementById('org-logo-preview');
+      const logoVal = document.getElementById('org-logo-data').value;
+      const nameVal = document.getElementById('org-name').value || 'HR';
+      if (!preview) return;
+      if (logoVal) {
+        preview.innerHTML = `<img src="${logoVal}" alt="Logo" class="w-full h-full object-cover" />`;
+      } else {
+        preview.textContent = getInitials(nameVal);
+      }
+    }
+
+    function handleOrgLogoUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('Vui lòng chọn tệp ảnh hợp lệ cho logo.', 'error');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Logo vượt quá 2MB, vui lòng chọn tệp nhỏ hơn.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById('org-logo-data').value = e.target.result;
+        updateOrgLogoPreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function pickPresetOrgLogo() {
+      const picked = PRESET_ORG_LOGOS[Math.floor(Math.random() * PRESET_ORG_LOGOS.length)];
+      document.getElementById('org-logo-data').value = picked;
+      updateOrgLogoPreview();
+    }
+
+    function clearOrgLogo() {
+      document.getElementById('org-logo-data').value = '';
+      const inp = document.getElementById('org-logo-file');
+      if (inp) inp.value = '';
+      updateOrgLogoPreview();
+    }
+
+    function saveOrgSettingsForm(event) {
+      event.preventDefault();
+      const depts = document.getElementById('org-departments').value
+        .split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const levels = document.getElementById('org-levels').value
+        .split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+      orgSettings = {
+        name: document.getElementById('org-name').value.trim() || 'ViệtHR Analytics',
+        code: document.getElementById('org-code').value.trim(),
+        parentOrg: document.getElementById('org-parent').value.trim(),
+        taxCode: document.getElementById('org-tax').value.trim(),
+        currency: document.getElementById('org-currency').value || 'VNĐ',
+        address: document.getElementById('org-address').value.trim(),
+        phone: document.getElementById('org-phone').value.trim(),
+        email: document.getElementById('org-email').value.trim(),
+        website: document.getElementById('org-website').value.trim(),
+        ceo: document.getElementById('org-ceo').value.trim(),
+        hrHead: document.getElementById('org-hr-head').value.trim(),
+        logo: document.getElementById('org-logo-data').value || '',
+        departments: depts.length > 0 ? depts : [...DEFAULT_DEPARTMENTS],
+        levels: levels.length > 0 ? levels : [...DEFAULT_LEVELS]
+      };
+
+      saveOrgSettings();
+      applyOrgBrandingToUI();
+      syncDepartmentAndLevelSelects();
+      renderDirectory();
+      renderDashboard();
+      closeOrgSettingsModal();
+      showToast('Đã lưu cấu hình đơn vị.');
+    }
+
+    function resetDefaultOrgSettings() {
+      orgSettings = getDefaultOrgSettings();
+      saveOrgSettings();
+      applyOrgBrandingToUI();
+      syncDepartmentAndLevelSelects();
+      renderDirectory();
+      renderDashboard();
+      openOrgSettingsModal();
+      showToast('Đã khôi phục cấu hình đơn vị mặc định.', 'info');
+    }
+
+    function triggerExcelFileInput() {
+      const inp = document.getElementById('excel-import-input');
+      if (inp) {
+        inp.value = '';
+        inp.click();
+      }
+    }
+
+    function closeExcelPreviewModal() {
+      pendingExcelRecords = [];
+      document.getElementById('excel-preview-modal').classList.add('hidden');
+    }
+
+    function normalizeNumber(val, fallback = 0) {
+      if (typeof val === 'number' && !isNaN(val)) return Math.max(0, Math.round(val));
+      if (val === undefined || val === null || String(val).trim() === '') return fallback;
+      const cleaned = String(val).replace(/[^\d.-]/g, '');
+      const num = Number(cleaned);
+      return isNaN(num) ? fallback : Math.max(0, Math.round(num));
+    }
+
+    function normalizeDateInput(val) {
+      if (!val) return '';
+      if (typeof val === 'number' && typeof XLSX !== 'undefined' && XLSX.SSF) {
+        const parsed = XLSX.SSF.parse_date_code(val);
+        if (parsed && parsed.y && parsed.m && parsed.d) {
+          return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+        }
+      }
+      const str = String(val).trim();
+      const isoMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+      }
+      const vnMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+      if (vnMatch) {
+        return `${vnMatch[3]}-${vnMatch[2].padStart(2, '0')}-${vnMatch[1].padStart(2, '0')}`;
+      }
+      return '';
+    }
+
+    function pickRowValue(row, keys) {
+      const lowerMap = {};
+      Object.keys(row || {}).forEach(k => {
+        lowerMap[k.trim().toLowerCase()] = row[k];
+      });
+      for (const k of keys) {
+        const v = lowerMap[k.toLowerCase()];
+        if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+      }
+      return '';
+    }
+
+    function handleExcelFileSelect(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (typeof XLSX === 'undefined') {
+        showToast('Thư viện đọc Excel (XLSX) chưa sẵn sàng.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.SheetNames[0];
+          const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+
+          if (!rows || rows.length === 0) {
+            showToast('Tệp bảng tính không có dữ liệu.', 'error');
+            return;
+          }
+
+          const existingCodes = new Set(employees.map(emp => String(emp.code || '').trim().toLowerCase()));
+          const warnings = [];
+          pendingExcelRecords = rows.map((row, idx) => {
+            const lineNum = idx + 2;
+            const code = String(pickRowValue(row, ['mã nv', 'ma nv', 'mã nhân viên', 'code', 'emp_code', 'id']) || `NV${Date.now().toString().slice(-4)}${idx + 1}`).trim();
+            const name = String(pickRowValue(row, ['họ và tên', 'ho va ten', 'họ tên', 'ho ten', 'name', 'fullname']) || '').trim();
+            const dept = String(pickRowValue(row, ['phòng ban', 'phong ban', 'department', 'dept']) || (orgSettings.departments?.[0] || 'Kỹ thuật')).trim();
+            const role = String(pickRowValue(row, ['chức vụ', 'chuc vu', 'vị trí', 'role', 'position']) || 'Nhân viên').trim();
+            const level = String(pickRowValue(row, ['cấp bậc', 'cap bac', 'level']) || 'Nhân viên').trim();
+            const email = String(pickRowValue(row, ['email', 'email công ty', 'email cong ty']) || '').trim();
+            const phone = String(pickRowValue(row, ['sđt', 'sdt', 'số điện thoại', 'so dien thoai', 'phone']) || '').trim();
+            const salary = normalizeNumber(pickRowValue(row, ['lương cơ bản', 'luong co ban', 'lương', 'luong', 'salary']), 15000000);
+            const allowance = normalizeNumber(pickRowValue(row, ['phụ cấp', 'phu cap', 'allowance']), 0);
+            const status = String(pickRowValue(row, ['trạng thái', 'trang thai', 'status']) || 'Đang làm việc').trim();
+            const startDate = normalizeDateInput(pickRowValue(row, ['ngày vào làm', 'ngay vao lam', 'start_date', 'startdate'])) || new Date().toISOString().split('T')[0];
+            const dob = normalizeDateInput(pickRowValue(row, ['ngày sinh', 'ngay sinh', 'dob', 'birthday']));
+            const gender = String(pickRowValue(row, ['giới tính', 'gioi tinh', 'gender']) || 'Nam').trim();
+
+            const valid = Boolean(name);
+            if (!valid) {
+              warnings.push(`Dòng ${lineNum} (Mã ${code}): Thiếu Họ và tên — sẽ bỏ qua khi áp dụng.`);
+            }
+            const isDuplicate = existingCodes.has(code.toLowerCase());
+
+            return {
+              lineNum,
+              valid,
+              isDuplicate,
+              record: {
+                id: `emp-xl-${Date.now()}-${idx}`,
+                code,
+                name,
+                avatar: '',
+                dob,
+                gender,
+                marital: String(pickRowValue(row, ['hôn nhân', 'hon nhan', 'marital']) || 'Độc thân').trim(),
+                idCard: String(pickRowValue(row, ['cccd', 'cmnd', 'id_card']) || '').trim(),
+                idCardDate: '',
+                idCardPlace: '',
+                hometown: '',
+                address: String(pickRowValue(row, ['địa chỉ', 'dia chi', 'address']) || '').trim(),
+                dept,
+                role,
+                level,
+                contract: String(pickRowValue(row, ['hợp đồng', 'hop dong', 'contract']) || 'Xác định thời hạn').trim(),
+                startDate,
+                contractEnd: normalizeDateInput(pickRowValue(row, ['hạn hợp đồng', 'han hop dong', 'contract_end'])),
+                status,
+                manager: String(pickRowValue(row, ['quản lý', 'quan ly', 'manager']) || '').trim(),
+                phone,
+                email,
+                personalEmail: '',
+                emgName: '',
+                emgRel: '',
+                emgPhone: '',
+                salary,
+                allowance,
+                bank: String(pickRowValue(row, ['ngân hàng', 'ngan hang', 'bank']) || '').trim(),
+                bankAcc: String(pickRowValue(row, ['số tài khoản', 'so tai khoan', 'stk', 'bank_acc']) || '').trim(),
+                bankBranch: '',
+                taxCode: String(pickRowValue(row, ['mst', 'mã số thuế', 'ma so thue', 'tax_code']) || '').trim(),
+                bhxh: String(pickRowValue(row, ['bhxh', 'sổ bhxh']) || '').trim()
+              }
+            };
+          });
+
+          const validCount = pendingExcelRecords.filter(x => x.valid).length;
+          const dupCount = pendingExcelRecords.filter(x => x.valid && x.isDuplicate).length;
+
+          document.getElementById('excel-file-meta').textContent = `Tệp: ${file.name} • Sheet: ${firstSheet} • Tổng ${pendingExcelRecords.length} dòng`;
+          document.getElementById('excel-summary-bar').innerHTML = `
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200"><span class="text-xs text-emerald-700">Dòng hợp lệ:</span> <strong class="text-emerald-900">${validCount}</strong></div>
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200"><span class="text-xs text-amber-700">Trùng Mã NV hiện có:</span> <strong class="text-amber-900">${dupCount}</strong></div>
+            <div class="p-3 rounded-xl bg-slate-100 border border-slate-200"><span class="text-xs text-slate-600">Cảnh báo:</span> <strong class="text-slate-900">${warnings.length}</strong></div>
+          `;
+
+          const warnBox = document.getElementById('excel-warnings-box');
+          if (warnings.length > 0) {
+            warnBox.classList.remove('hidden');
+            warnBox.innerHTML = warnings.map(w => `<p>• ${escapeHtml(w)}</p>`).join('');
+          } else {
+            warnBox.classList.add('hidden');
+            warnBox.innerHTML = '';
+          }
+
+          document.getElementById('excel-preview-tbody').innerHTML = pendingExcelRecords.map(item => {
+            const r = item.record;
+            const badge = !item.valid
+              ? `<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-semibold">Thiếu tên</span>`
+              : item.isDuplicate
+                ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">Trùng mã</span>`
+                : `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">Hợp lệ</span>`;
+            return `
+              <tr class="${!item.valid ? 'bg-rose-50/40' : ''}">
+                <td class="py-2 px-3 text-slate-500">${item.lineNum}</td>
+                <td class="py-2 px-3 font-mono font-semibold">${escapeHtml(r.code)}</td>
+                <td class="py-2 px-3 font-semibold text-slate-900">${escapeHtml(r.name || '—')}</td>
+                <td class="py-2 px-3">${escapeHtml(r.dept)}</td>
+                <td class="py-2 px-3">${escapeHtml(r.role)}</td>
+                <td class="py-2 px-3">${escapeHtml(r.email || r.phone || '—')}</td>
+                <td class="py-2 px-3 text-right font-semibold">${formatCompactVND(r.salary)}</td>
+                <td class="py-2 px-3">${badge}</td>
+              </tr>
+            `;
+          }).join('');
+
+          document.getElementById('excel-preview-modal').classList.remove('hidden');
+        } catch (err) {
+          console.error('Lỗi đọc tệp Excel:', err);
+          showToast('Không thể đọc tệp Excel/CSV này.', 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function applyExcelImport() {
+      const validItems = pendingExcelRecords.filter(x => x.valid).map(x => x.record);
+      if (validItems.length === 0) {
+        showToast('Không có dòng dữ liệu hợp lệ để nhập.', 'error');
+        return;
+      }
+      const mode = document.querySelector('input[name="excel-import-mode"]:checked')?.value || 'MERGE_UPSERT';
+
+      if (mode === 'REPLACE_ALL') {
+        employees = validItems;
+      } else if (mode === 'APPEND_NEW') {
+        const existingCodes = new Set(employees.map(e => String(e.code || '').trim().toLowerCase()));
+        const added = validItems.filter(r => !existingCodes.has(String(r.code || '').trim().toLowerCase()));
+        employees = [...added, ...employees];
+      } else {
+        const byCode = new Map(employees.map(e => [String(e.code || '').trim().toLowerCase(), e]));
+        validItems.forEach(item => {
+          const key = String(item.code || '').trim().toLowerCase();
+          if (byCode.has(key)) {
+            const old = byCode.get(key);
+            byCode.set(key, { ...old, ...item, id: old.id, avatar: item.avatar || old.avatar });
+          } else {
+            byCode.set(key, item);
+          }
+        });
+        employees = Array.from(byCode.values());
+      }
+
+      saveEmployees();
+      populateRoleFilter();
+      renderDirectory();
+      renderDashboard();
+      closeExcelPreviewModal();
+      showToast(`Đã áp dụng dữ liệu Excel (${validItems.length} dòng hợp lệ).`);
+    }
+
+    function downloadExcelTemplate() {
+      if (typeof XLSX === 'undefined') {
+        showToast('Thư viện XLSX chưa sẵn sàng.', 'error');
+        return;
+      }
+      const sampleRows = [
+        {
+          'Mã NV': 'NV011',
+          'Họ và tên': 'Nguyễn Minh Khôi',
+          'Ngày sinh': '1997-06-15',
+          'Giới tính': 'Nam',
+          'Phòng ban': 'Kỹ thuật',
+          'Chức vụ': 'Kỹ sư Phần mềm',
+          'Cấp bậc': 'Chuyên viên',
+          'Email': 'khoi.nm@viethr.vn',
+          'SĐT': '0901234567',
+          'Ngày vào làm': '2026-01-10',
+          'Trạng thái': 'Đang làm việc',
+          'Lương cơ bản': 22000000,
+          'Phụ cấp': 2500000,
+          'Ngân hàng': 'Vietcombank',
+          'Số tài khoản': '1012345678'
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(sampleRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'NhanSuMau');
+      XLSX.writeFile(wb, 'mau-nhap-nhan-su.xlsx');
+      showToast('Đã tải file Excel mẫu chuẩn.');
+    }
+
+    function exportExcelWorkbook() {
+      if (typeof XLSX === 'undefined') {
+        showToast('Thư viện XLSX chưa sẵn sàng.', 'error');
+        return;
+      }
+      const rows = employees.map(e => ({
+        'Mã NV': e.code,
+        'Họ và tên': e.name,
+        'Ngày sinh': e.dob,
+        'Giới tính': e.gender,
+        'Phòng ban': e.dept,
+        'Chức vụ': e.role,
+        'Cấp bậc': e.level,
+        'Hợp đồng': e.contract,
+        'Ngày vào làm': e.startDate,
+        'Trạng thái': e.status,
+        'Email': e.email,
+        'SĐT': e.phone,
+        'Lương cơ bản': e.salary,
+        'Phụ cấp': e.allowance,
+        'Ngân hàng': e.bank,
+        'Số tài khoản': e.bankAcc
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'DanhSachNhanSu');
+      XLSX.writeFile(wb, `danh-sach-nhan-su-${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast('Đã xuất danh sách Excel (.xlsx).');
+    }
+
+    function exportCSV() {
+      const headers = ['MaNV', 'HoTen', 'PhongBan', 'ChucVu', 'TrangThai', 'Email', 'SDT', 'LuongCoBan', 'PhuCap'];
+      const lines = [headers.join(',')];
+      employees.forEach(e => {
+        const vals = [e.code, e.name, e.dept, e.role, e.status, e.email, e.phone, e.salary || 0, e.allowance || 0]
+          .map(v => `"${String(v ?? '').replace(/"/g, '""')}"`);
+        lines.push(vals.join(','));
+      });
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `danh-sach-nhan-su-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất danh sách CSV.');
+    }
+
+    function populatePrintOrgHeader(docTitle, docSubtitle) {
+      document.getElementById('print-parent-org').textContent = orgSettings.parentOrg || '';
+      document.getElementById('print-company-name').textContent = orgSettings.name || 'ViệtHR Analytics';
+      const metaParts = [];
+      if (orgSettings.taxCode) metaParts.push(`MST: ${orgSettings.taxCode}`);
+      if (orgSettings.address) metaParts.push(orgSettings.address);
+      if (orgSettings.phone) metaParts.push(`ĐT: ${orgSettings.phone}`);
+      document.getElementById('print-company-meta').textContent = metaParts.join(' • ');
+      document.getElementById('print-date-str').textContent = formatDateVN(new Date().toISOString());
+      document.getElementById('print-doc-title').textContent = docTitle;
+      document.getElementById('print-doc-subtitle').textContent = docSubtitle;
+
+      const logoEl = document.getElementById('print-org-logo');
+      if (orgSettings.logo) {
+        logoEl.innerHTML = `<img src="${orgSettings.logo}" alt="Logo" class="w-full h-full object-cover" />`;
+      } else {
+        logoEl.textContent = getInitials(orgSettings.name || 'HR');
+      }
+    }
+
+    function printCurrentView() {
+      const isDir = prefs.activeTab === 'directory';
+      populatePrintOrgHeader(
+        isDir ? 'DANH SÁCH HỒ SƠ NHÂN SỰ' : 'BÁO CÁO PHÂN TÍCH NHÂN SỰ',
+        `${orgSettings.name || 'ViệtHR Analytics'}${orgSettings.hrHead ? ` • Phụ trách: ${orgSettings.hrHead}` : ''}`
+      );
+      document.body.classList.remove('printing-profile');
+      document.body.classList.add('printing-org-report');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-org-report');
+      }, 400);
+    }
+
+    function printSingleEmployee(empId) {
+      const emp = employees.find(e => e.id === empId);
+      if (!emp) return;
+      const area = document.getElementById('print-profile-area');
+      const totalIncome = (Number(emp.salary) || 0) + (Number(emp.allowance) || 0);
+      const orgName = orgSettings.name || 'ViệtHR Analytics';
+      const orgMeta = [
+        orgSettings.taxCode ? `MST: ${orgSettings.taxCode}` : '',
+        orgSettings.address || '',
+        orgSettings.phone ? `ĐT: ${orgSettings.phone}` : '',
+        orgSettings.email || ''
+      ].filter(Boolean).join(' • ');
+
+      area.innerHTML = `
+        <div class="p-4 border border-slate-300 rounded-xl bg-white space-y-2.5 text-slate-900">
+          <!-- Đầu trang đơn vị -->
+          <div class="flex items-start justify-between gap-3 border-b border-slate-300 pb-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-10 h-10 rounded-lg overflow-hidden border border-slate-300 flex items-center justify-center bg-blue-900 text-white font-bold text-xs shrink-0">
+                ${orgSettings.logo
+                  ? `<img src="${orgSettings.logo}" alt="${escapeHtml(orgName)}" class="w-full h-full object-cover" />`
+                  : `<span>${escapeHtml(getInitials(orgName))}</span>`}
+              </div>
+              <div class="leading-tight min-w-0">
+                ${orgSettings.parentOrg ? `<p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 truncate">${escapeHtml(orgSettings.parentOrg)}</p>` : ''}
+                <p class="text-xs font-bold text-blue-950 truncate">${escapeHtml(orgName)}</p>
+                ${orgMeta ? `<p class="text-[10px] text-slate-600 truncate">${escapeHtml(orgMeta)}</p>` : ''}
+              </div>
+            </div>
+            <div class="text-right text-[10px] text-slate-600 leading-tight shrink-0">
+              <p>Ngày in: <strong>${formatDateVN(new Date().toISOString())}</strong></p>
+              <p>Mã hồ sơ: <strong class="font-mono">${escapeHtml(emp.code || '—')}</strong></p>
+            </div>
+          </div>
+
+          <!-- Tiêu đề chính bản in sơ yếu lý lịch -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800">
+            <div>
+              <h1 class="text-base font-bold uppercase tracking-wide text-slate-900 leading-tight">SƠ YẾU LÝ LỊCH NHÂN SỰ</h1>
+              <p class="text-[10px] text-slate-500">Hồ sơ lưu trữ nhân sự — ${escapeHtml(orgName)}</p>
+            </div>
+            <div>${getStatusBadge(emp.status)}</div>
+          </div>
+
+          <!-- Khối chân dung & tóm tắt chức danh -->
+          <div class="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 border border-slate-200 print-break-avoid">
+            ${renderAvatarHTML(emp, 'w-16 h-16 text-lg rounded-lg border border-slate-300')}
+            <div class="text-xs space-y-0.5 flex-1 leading-snug">
+              <h2 class="text-sm font-bold text-slate-900">${escapeHtml(emp.name)} <span class="text-xs font-mono font-semibold text-slate-500">(${escapeHtml(emp.code || '—')})</span></h2>
+              <p><strong>Chức vụ:</strong> ${escapeHtml(emp.role || '—')} • <strong>Cấp bậc:</strong> ${escapeHtml(emp.level || '—')}</p>
+              <p><strong>Phòng ban:</strong> ${escapeHtml(emp.dept || '—')} • <strong>Quản lý trực tiếp:</strong> ${escapeHtml(emp.manager || '—')}</p>
+              <p><strong>Ngày vào làm:</strong> ${formatDateVN(emp.startDate)} • <strong>Hợp đồng:</strong> ${escapeHtml(emp.contract || '—')} • <strong>Hạn HĐ/Thử việc:</strong> ${formatDateVN(emp.contractEnd)}</p>
+            </div>
+          </div>
+
+          <!-- Chi tiết các nhóm thông tin đầy đủ -->
+          <div class="grid grid-cols-2 gap-2.5 text-xs leading-snug">
+            <div class="p-2.5 rounded-lg border border-slate-200 space-y-1 print-break-avoid">
+              <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900 pb-0.5 border-b border-slate-200 mb-1">1. Thông tin cá nhân & định danh</h3>
+              <p><span class="text-slate-500">Ngày sinh:</span> <strong>${formatDateVN(emp.dob)}</strong></p>
+              <p><span class="text-slate-500">Giới tính:</span> <strong>${escapeHtml(emp.gender || '—')}</strong> • <span class="text-slate-500">Hôn nhân:</span> <strong>${escapeHtml(emp.marital || '—')}</strong></p>
+              <p><span class="text-slate-500">Số CCCD/CMND:</span> <strong>${escapeHtml(emp.idCard || '—')}</strong></p>
+              <p><span class="text-slate-500">Ngày cấp:</span> <strong>${formatDateVN(emp.idCardDate)}</strong> • <span class="text-slate-500">Nơi cấp:</span> <strong>${escapeHtml(emp.idCardPlace || '—')}</strong></p>
+              <p><span class="text-slate-500">Quê quán:</span> <strong>${escapeHtml(emp.hometown || '—')}</strong></p>
+              <p><span class="text-slate-500">Chỗ ở hiện tại:</span> <strong>${escapeHtml(emp.address || '—')}</strong></p>
+            </div>
+
+            <div class="p-2.5 rounded-lg border border-slate-200 space-y-1 print-break-avoid">
+              <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900 pb-0.5 border-b border-slate-200 mb-1">2. Liên hệ & người liên hệ khẩn cấp</h3>
+              <p><span class="text-slate-500">Số điện thoại:</span> <strong>${escapeHtml(emp.phone || '—')}</strong></p>
+              <p><span class="text-slate-500">Email công ty:</span> <strong>${escapeHtml(emp.email || '—')}</strong></p>
+              <p><span class="text-slate-500">Email cá nhân:</span> <strong>${escapeHtml(emp.personalEmail || '—')}</strong></p>
+              <p><span class="text-slate-500">Người liên hệ khẩn cấp:</span> <strong>${escapeHtml(emp.emgName || '—')}</strong></p>
+              <p><span class="text-slate-500">Mối quan hệ:</span> <strong>${escapeHtml(emp.emgRel || '—')}</strong></p>
+              <p><span class="text-slate-500">SĐT khẩn cấp:</span> <strong>${escapeHtml(emp.emgPhone || '—')}</strong></p>
+            </div>
+
+            <div class="p-2.5 rounded-lg border border-slate-200 space-y-1 col-span-2 print-break-avoid">
+              <h3 class="text-[11px] font-bold uppercase tracking-wider text-blue-900 pb-0.5 border-b border-slate-200 mb-1">3. Lương, phụ cấp, ngân hàng & thuế/BHXH</h3>
+              <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                <p><span class="text-slate-500">Lương cơ bản:</span> <strong>${formatVND(emp.salary)}</strong></p>
+                <p><span class="text-slate-500">Phụ cấp hàng tháng:</span> <strong>${formatVND(emp.allowance)}</strong></p>
+                <p><span class="text-slate-500">Tổng thu nhập thỏa thuận:</span> <strong class="text-blue-900">${formatVND(totalIncome)}</strong></p>
+                <p><span class="text-slate-500">Ngân hàng:</span> <strong>${escapeHtml(emp.bank || '—')}</strong>${emp.bankBranch ? ` (${escapeHtml(emp.bankBranch)})` : ''}</p>
+                <p><span class="text-slate-500">Số tài khoản:</span> <strong class="font-mono">${escapeHtml(emp.bankAcc || '—')}</strong></p>
+                <p><span class="text-slate-500">MST cá nhân:</span> <strong class="font-mono">${escapeHtml(emp.taxCode || '—')}</strong> • <span class="text-slate-500">BHXH:</span> <strong class="font-mono">${escapeHtml(emp.bhxh || '—')}</strong></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Khối ký xác nhận -->
+          <div class="grid grid-cols-2 gap-6 pt-2 border-t border-slate-200 text-center text-[11px] print-break-avoid">
+            <div>
+              <p class="font-bold text-slate-800 uppercase">Người khai lý lịch</p>
+              <p class="text-slate-400 italic">(Ký và ghi rõ họ tên)</p>
+              <div class="h-10"></div>
+              <p class="font-semibold text-slate-800">${escapeHtml(emp.name)}</p>
+            </div>
+            <div>
+              <p class="font-bold text-slate-800 uppercase">Xác nhận đơn vị / Nhân sự</p>
+              <p class="text-slate-400 italic">(Ký tên, đóng dấu xác nhận)</p>
+              <div class="h-10"></div>
+              <p class="font-semibold text-slate-800">${escapeHtml(orgSettings.hrHead || orgSettings.ceo || '')}</p>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.classList.remove('printing-org-report');
+      document.body.classList.add('printing-profile');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-profile');
+        area.innerHTML = '';
+      }, 400);
+    }
+
+    /* =====================================================================
+     * 9. KHỞI TẠO ỨNG DỤNG
+     * ===================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('click', () => closeDataMenu());
+      loadState();
+      applyOrgBrandingToUI();
+      syncDepartmentAndLevelSelects();
+      updateNavBadge();
+      populateRoleFilter();
+      setSalaryViewMode(prefs.salaryMode);
+      setDirectoryLayout(prefs.directoryLayout);
+      switchMode(prefs.activeTab);
+    });
+  </script>
+</body>
+</html>
